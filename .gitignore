@@ -1,0 +1,14 @@
+# Temp
+.DS_Store
+.vscode
+.idea
+.temp
+
+# Node
+**/node_modules/
+**/yarn.lock
+**/package-lock.json
+
+# Publish
+/dist
+/bundle
