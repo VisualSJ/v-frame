@@ -12,3 +12,10 @@
 # Publish
 /dist
 /bundle
+
+# Tests
+/playwright/test-results/
+/playwright/playwright-report/
+/playwright/playwright/.cache/
+/playwright/tests-examples
+/playwright/tests/basics/**/*.png

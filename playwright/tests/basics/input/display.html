@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            header {
+                padding: 10px 0 8px 0;
+            }
+            .block {
+                display: block;
+            }
+            .flex {
+                display: flex;
+            }
+        </style>
+    </head>
+    <body>
+        <header>block 布局下的正常表现</header>
+        <div class="block">
+            <v-input value="normal"   color="normal"   ></v-input>
+            <v-input value="primary"  color="primary"  ></v-input>
+            <v-input value="success"  color="success"  ></v-input>
+            <v-input value="danger"   color="danger"   ></v-input>
+            <v-input value="wranning" color="wranning" ></v-input>
+        </div>
+
+        <header>flex 布局下的正常表现</header>
+        <div class="flex">
+            <v-input value="normal"   color="normal"   ></v-input>
+            <v-input value="primary"  color="primary"  ></v-input>
+            <v-input value="success"  color="success"  ></v-input>
+            <v-input value="danger"   color="danger"   ></v-input>
+            <v-input value="wranning" color="wranning" ></v-input>
+        </div>
+
+        <header>block 布局下宽度不够的表现</header>
+        <div class="block" style="width: 300px;">
+            <v-input value="normal"   color="normal"   ></v-input>
+            <v-input value="primary"  color="primary"  ></v-input>
+            <v-input value="success"  color="success"  ></v-input>
+            <v-input value="danger"   color="danger"   ></v-input>
+            <v-input value="wranning" color="wranning" ></v-input>
+        </div>
+
+        <header>flex 布局下宽度不够的表现</header>
+        <div class="flex" style="width: 300px;">
+            
+            <v-input value="normal"   color="normal"   ></v-input>
+            <v-input value="primary"  color="primary"  ></v-input>
+            <v-input value="success"  color="success"  ></v-input>
+            <v-input value="danger"   color="danger"   ></v-input>
+            <v-input value="wranning" color="wranning" ></v-input>
+        </div>
+
+        <header>placeholder</header>
+        <div class="bolck">
+            <v-input placeholder="placeholder"></v-input>
+            <v-input value="normal" placeholder="placeholder"></v-input>
+        </div>
+
+        <script type="module" src="/v-frame.esm.js"></script>
+    </body>
+</html>

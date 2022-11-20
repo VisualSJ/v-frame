@@ -86,6 +86,7 @@ createElement('input', {
         $input!.addEventListener('change', (event) => {
             value = $input.value;
             this.data.setProperty('value', value);
+            this.setAttribute('value', value);
             this.dispatch('confirm');
         });
         $input!.addEventListener('focus', (event) => {
