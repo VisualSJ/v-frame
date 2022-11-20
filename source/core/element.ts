@@ -7,6 +7,8 @@
  *   2. 数据管理（data、attribute）
  */
 export class BaseElement extends HTMLElement {
+    protected DEBUG = true;
+
     /**
      * @description 监听 attribute 修改
      */
@@ -19,6 +21,14 @@ export class BaseElement extends HTMLElement {
 
     querySelector(selector: string) {
         return this.shadowRoot.querySelector(selector);
+    }
+
+    getProperty(key: string) {
+        return this.data.getProperty(key);
+    }
+
+    setProperty(key: string, value: any) {
+        return this.data.setProperty(key, value);
     }
 
     dispatch(eventName: string, options?: EventInit) {

@@ -1,5 +1,6 @@
 'use strict';
 
+import './theme';
 import { BaseElement } from './element';
 
 interface IFrameOptions {
