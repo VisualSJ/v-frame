@@ -1,5 +1,5 @@
 'use strict';
 
-import './core';
-import './basics';
-import './layout';
+import './core/index.js';
+import './basics/index.js';
+import './layout/index.js';

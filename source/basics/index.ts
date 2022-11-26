@@ -1,9 +1,10 @@
 'use strict';
 
-import './input';
-import './num-input';
-import './radio';
-import './searcher';
-import './slider';
-import './switch';
-import './textarea';
+import './button.js';
+import './input.js';
+import './num-input.js';
+import './radio.js';
+import './searcher.js';
+import './slider.js';
+import './switch.js';
+import './textarea.js';

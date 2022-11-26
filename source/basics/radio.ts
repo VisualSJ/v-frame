@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement } from '../core';
+import { createElement, style } from '../core/index.js';
 
 createElement('radio', {
     template: /*html*/`
@@ -15,34 +15,10 @@ createElement('radio', {
     `,
 
     style: /*css*/`
-:host {
-    --font-color: var(--color-default);
-    --border-color: var(--color-default);
-
-    --line-height: calc(var(--size-line) * 1px);
-    --font-size: calc(var(--size-font) * 1px);
-
-    --padding-row: calc((var(--size-line) - var(--size-font)) * 0.2px);
-}
-:host([color="primary"]) {
-    --font-color: var(--color-primary);
-    --border-color: var(--color-primary);
-}
-:host([color="success"]) {
-    --font-color: var(--color-success);
-    --border-color: var(--color-success);
-}
-:host([color="danger"]) {
-    --font-color: var(--color-danger);
-    --border-color: var(--color-danger);
-}
-:host([color="wranning"]) {
-    --font-color: var(--color-wranning);
-    --border-color: var(--color-wranning);
-}
+${style.hollow}
+${style.line}
 
 :host {
-    display: inline-flex;
     cursor: pointer;
     box-sizing: border-box;
     line-height: var(--line-height);
@@ -77,8 +53,7 @@ createElement('radio', {
 
     attrs: {
         checked(value, legacy) {
-            const bool = parseStringToBoolean(value);
-            this.data.setProperty('value', bool);
+            this.data.setProperty('value', value !== null);
         },
     },
 
@@ -89,11 +64,18 @@ createElement('radio', {
     onInit() {
         const $div = this.querySelector('div');
         this.addEventListener('click', () => {
+            if (
+                this.hasAttribute('readonly') ||
+                this.hasAttribute('disabled')
+            ) {
+                return;
+            }
             const bool = this.data.getProperty('value');
             this.data.setProperty('value', !bool);
         });
 
         this.data.addPropertyEventener('value', (value) => {
+            console.log(value)
             if (value) {
                 $div!.setAttribute('checked', '');
             } else {
@@ -112,7 +94,3 @@ createElement('radio', {
 
     },
 });
-
-function parseStringToBoolean(str: string) {
-    return str === 'true';
-}

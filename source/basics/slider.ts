@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement } from '../core';
+import { createElement } from '../core/index.js';
 
 createElement('slider', {
     template: /*html*/`

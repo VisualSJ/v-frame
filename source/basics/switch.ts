@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement } from '../core';
+import { createElement, style } from '../core/index.js';
 
 createElement('switch', {
     template: /*html*/`
@@ -13,38 +13,15 @@ createElement('switch', {
     `,
 
     style: /*css*/`
-:host {
-    --font-color: var(--color-default);
-    --button-color: var(--color-background);
-    --element-color: var(--color-background);
+${style.hollow}
+${style.line}
 
-    --line-height: calc(var(--size-line) * 1px);
+:host {
     --bar-height: calc(var(--size-line) * 0.8px);
     --bar-width: calc(var(--size-line) * 1.4px);
     --bar-offset: calc(var(--size-line) * 0.6px);
-    --font-size: calc(var(--size-font) * 1px);
+    --slider-background: var(--color-default);
 
-    --padding-row: calc((var(--size-line) - var(--size-font)) * 0.2px);
-}
-:host([color="primary"]) {
-    --font-color: var(--color-primary);
-    --element-color: var(--color-primary);
-}
-:host([color="success"]) {
-    --font-color: var(--color-success);
-    --element-color: var(--color-success);
-}
-:host([color="danger"]) {
-    --font-color: var(--color-danger);
-    --element-color: var(--color-danger);
-}
-:host([color="wranning"]) {
-    --font-color: var(--color-wranning);
-    --element-color: var(--color-wranning);
-}
-
-:host {
-    display: inline-flex;
     cursor: pointer;
     box-sizing: border-box;
     line-height: var(--line-height);
@@ -74,10 +51,10 @@ createElement('switch', {
     border-radius: var(--bar-height);
     box-shadow: inset 0px 0px 1px #666;
     transition: left 0.3s;
-    background-color: var(--button-color);
+    background-color: var(--slider-background);
 }
 :host > div > span[checked] {
-    background-color: var(--element-color);
+    background-color: var(--font-color);
 }
 :host > div > span[checked] > span {
     left: var(--bar-offset);

@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement } from '../core';
+import { createElement, style } from '../core/index.js';
 
 createElement('num-input', {
     template: /*html*/`
@@ -15,36 +15,11 @@ createElement('num-input', {
 </div>
     `,
     style: /*css*/`
-:host {
-    --font-color: var(--color-default);
-    --border-color: var(--color-default);
-
-    --line-height: calc(var(--size-line) * 1px);
-    --bar-width: calc(var(--size-line) * 0.5px);
-    --font-size: calc(var(--size-font) * 1px);
-
-    --padding-row: calc((var(--size-line) - var(--size-font)) * 0.8px);
-}
-:host([color="primary"]) {
-    --font-color: var(--color-primary);
-    --border-color: var(--color-primary);
-}
-:host([color="success"]) {
-    --font-color: var(--color-success);
-    --border-color: var(--color-success);
-}
-:host([color="danger"]) {
-    --font-color: var(--color-danger);
-    --border-color: var(--color-danger);
-}
-:host([color="wranning"]) {
-    --font-color: var(--color-wranning);
-    --border-color: var(--color-wranning);
-}
+${style.hollow}
+${style.line}
 
 :host {
     width: 150px;
-    display: inline-flex;
     border-radius: 2px;
     height: var(--line-height);
     line-height: var(--line-height);
@@ -93,14 +68,38 @@ createElement('num-input', {
         // size() {},
         // color() {},
         value(value, legacy) {
-            const num = parseStringToNumber(value);
+            const num = parseStringToNumber(value, this.data.stash.min, this.data.stash.max);
             const $input = this.querySelector('input');
             $input!.setAttribute('value', num + '');
             this.data.setProperty('value', num);
         },
+        readonly(value, legacy) {
+            const $input = this.querySelector('input');
+            if (value === null) {
+                $input!.removeAttribute('readonly');
+            } else {
+                $input!.setAttribute('readonly', value);
+            }
+        },
+        disabled(value, legacy) {
+            const $input = this.querySelector('input');
+            if (value === null) {
+                $input!.removeAttribute('readonly');
+            } else {
+                $input!.setAttribute('readonly', value);
+            }
+        },
         step(value, legacy) {
             const num = parseStringToNumber(value);
             this.data.setProperty('step', num);
+        },
+        min(value, legacy) {
+            const num = parseStringToNumber(value);
+            this.data.setProperty('min', num);
+        },
+        max(value, legacy) {
+            const num = parseStringToNumber(value);
+            this.data.setProperty('max', num);
         },
     },
 
@@ -117,7 +116,7 @@ createElement('num-input', {
         let value = 0;
 
         $input!.addEventListener('input', (event) => {
-            const num = parseStringToNumber($input.value);
+            const num = parseStringToNumber($input.value, this.data.stash.min, this.data.stash.max);
             this.data.setProperty('value', num);
             this.dispatch('change');
         });
@@ -127,18 +126,64 @@ createElement('num-input', {
                 value = num;
                 $input!.value = value + '';
                 this.data.setProperty('value', value);
+                this.setAttribute('value', value.toString());
             } catch(error) {
-                const num = parseStringToNumber($input.value);
+                const num = parseStringToNumber($input.value, this.data.stash.min, this.data.stash.max);
                 value = num;
                 $input!.value = value + '';
                 this.data.setProperty('value', value);
+                this.setAttribute('value', value.toString());
             }
             this.dispatch('confirm');
         });
         $input!.addEventListener('focus', (event) => {
             value = this.data.getProperty('value');
         });
+
+        let timer: number | null | NodeJS.Timer = null;
+        const addition = () => {
+            const exec = () => {
+                const legacy = this.data.getProperty('value');
+                const num = legacy + this.data.stash.step;
+                this.data.setProperty('value', num);
+                $input.value = num.toString();
+            }
+            exec();
+            (timer !== null) && clearInterval(timer);
+            timer = setInterval(() => {
+                (timer !== null) && clearInterval(timer);
+                timer = setInterval(() => {
+                    exec();
+                }, 40);
+            }, 500);
+        }
+
+        const subtraction = () => {
+            const exec = () => {
+                const legacy = this.data.getProperty('value');
+                const num = legacy - this.data.stash.step;
+                this.data.setProperty('value', num);
+                $input.value = num.toString();
+            }
+            exec();
+            (timer !== null) && clearInterval(timer);
+            timer = setInterval(() => {
+                (timer !== null) && clearInterval(timer);
+                timer = setInterval(() => {
+                    exec();
+                }, 40);
+            }, 500);
+        }
+
         $input!.addEventListener('keydown', (event) => {
+            if (
+                this.hasAttribute('readonly') ||
+                this.hasAttribute('disabled')
+            ) {
+                event.stopPropagation();
+                event.preventDefault();
+                return;
+            }
             switch(event.key) {
                 // esc 还原正在输入的数据到上一次确认的状态
                 case 'Escape': {
@@ -151,27 +196,56 @@ createElement('num-input', {
                         this.data.setProperty('value', value);
                         this.dispatch('cancel');
                     }
+                    break;
+                }
+                case 'ArrowUp': {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    addition();
+                    break;
+                }
+                case 'ArrowDown': {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    subtraction();
+                    break;
                 }
             }
         });
+        $input!.addEventListener('keyup', (event) => {
+            (timer !== null) && clearInterval(timer);
+        });
+        $input!.addEventListener('blur', () => {
+            (timer !== null) && clearInterval(timer);
+        });
 
         $add!.addEventListener('mousedown', (event) => {
-            const timer = setInterval(() => {
-                const num = this.data.getProperty('value');
-                this.data.setProperty('value', num + this.data.stash.step);
-            }, 20);
+            event.stopPropagation();
+            event.preventDefault();
+            if (
+                this.hasAttribute('readonly') ||
+                this.hasAttribute('disabled')
+            ) {
+                return;
+            }
+            addition();
             document.addEventListener('mouseup', () => {
-                clearInterval(timer);
+                (timer !== null) && clearInterval(timer);
             });
         });
 
         $subtract!.addEventListener('mousedown', (event) => {
-            const timer = setInterval(() => {
-                const num = this.data.getProperty('value');
-                this.data.setProperty('value', num - this.data.stash.step);
-            }, 20);
+            event.stopPropagation();
+            event.preventDefault();
+            if (
+                this.hasAttribute('readonly') ||
+                this.hasAttribute('disabled')
+            ) {
+                return;
+            }
+            subtraction();
             document.addEventListener('mouseup', () => {
-                clearInterval(timer);
+                (timer !== null) && clearInterval(timer);
             });
         });
     },
@@ -185,10 +259,16 @@ createElement('num-input', {
     },
 });
 
-function parseStringToNumber(str: string) {
-    const num = parseFloat(str);
+function parseStringToNumber(str: string, min?: number, max?: number) {
+    let num = parseFloat(str);
     if (isNaN(num)) {
         return 0;
+    }
+    if (min !== undefined) {
+        num = Math.max(num, min);
+    }
+    if (max !== undefined) {
+        num = Math.min(num, max);
     }
     return num;
 }

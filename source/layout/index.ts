@@ -1,4 +1,4 @@
 'use strict';
 
-import './prop';
-import './layout';
+import './prop.js';
+import './layout.js';

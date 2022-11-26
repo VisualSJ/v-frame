@@ -1,40 +1,16 @@
 'use strict';
 
-import { createElement } from '../core';
+import { createElement, style } from '../core/index.js';
 
 createElement('input', {
     template: /*html*/`
 <input />
     `,
     style: /*css*/`
-:host {
-    --font-color: var(--color-default);
-    --border-color: var(--color-default);
-
-    --line-height: calc(var(--size-line) * 1px);
-    --font-size: calc(var(--size-font) * 1px);
-
-    --padding-row: calc((var(--size-line) - var(--size-font)) * 0.8px);
-}
-:host([color="primary"]) {
-    --font-color: var(--color-primary);
-    --border-color: var(--color-primary);
-}
-:host([color="success"]) {
-    --font-color: var(--color-success);
-    --border-color: var(--color-success);
-}
-:host([color="danger"]) {
-    --font-color: var(--color-danger);
-    --border-color: var(--color-danger);
-}
-:host([color="wranning"]) {
-    --font-color: var(--color-wranning);
-    --border-color: var(--color-wranning);
-}
+${style.hollow}
+${style.line}
 
 :host {
-    display: inline-flex;
     border-radius: 2px;
     width: 150px;
     border: 1px solid var(--border-color);
@@ -66,6 +42,22 @@ createElement('input', {
         placeholder(value) {
             const $input = this.querySelector('input');
             $input!.setAttribute('placeholder', value);
+        },
+        readonly(value) {
+            const $input = this.querySelector('input');
+            if (value === null) {
+                $input!.removeAttribute('readonly');
+            } else {
+                $input!.setAttribute('readonly', value);
+            }
+        },
+        disabled(value) {
+            const $input = this.querySelector('input');
+            if (value === null) {
+                $input!.removeAttribute('readonly');
+            } else {
+                $input!.setAttribute('readonly', value);
+            }
         },
     },
 
