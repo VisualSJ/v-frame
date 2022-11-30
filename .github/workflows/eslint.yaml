@@ -1,0 +1,15 @@
+name: eslint
+on: [push, pull_request]
+jobs:
+  eslint:
+    name: Run ESLint
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: npm install --ignore-scripts
+      - name: Run ESLint
+        shell: pwsh
+        run: ./.github/workflows/scripts/eslint.ps1
