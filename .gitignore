@@ -10,8 +10,8 @@
 **/package-lock.json
 
 # Publish
-/dist
-/bundle
+/element/*/dist
+/element/*/bundle
 
 # Tests
 /playwright/test-results/

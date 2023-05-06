@@ -1,0 +1,122 @@
+{
+  "scale": 0.96,
+  "offset": {
+    "x": 0,
+    "y": 0
+  },
+  "meshOption": {
+    "meshSize": 50,
+    "meshColor": "#333",
+    "backgroundColor": "#333"
+  },
+  "nodes": {
+    "abcd1": {
+      "type": "blend-2d",
+      "position": {
+        "x": -75.9015151515154,
+        "y": -188.17424242424278
+      },
+      "details": {
+        "label": "abcd1"
+      }
+    },
+    "abcd2": {
+      "type": "blend-2d",
+      "position": {
+        "x": 200,
+        "y": 200
+      },
+      "details": {
+        "label": "abcd2"
+      }
+    },
+    "test1": {
+      "type": "test-param",
+      "position": {
+        "x": 138.11764705882433,
+        "y": -123.76470588235316
+      },
+      "details": {
+        "label": "test1"
+      }
+    },
+    "test2": {
+      "type": "test-param",
+      "position": {
+        "x": 86.00000000000063,
+        "y": -303.0000000000002
+      },
+      "details": {
+        "label": "test2"
+      }
+    },
+    "test3": {
+      "type": "test-param2",
+      "position": {
+        "x": -230.9754901960791,
+        "y": -128.1348039215685
+      },
+      "details": {
+        "label": "test3"
+      }
+    },
+    "test4": {
+      "type": "test-param2",
+      "position": {
+        "x": -77.66221033868112,
+        "y": 176.37990196078474
+      },
+      "details": {
+        "label": "test4"
+      }
+    }
+  },
+  "lines": {
+    "line1": {
+      "type": "curve",
+      "details": {},
+      "input": {
+        "node": "abcd1"
+      },
+      "output": {
+        "node": "abcd2"
+      }
+    },
+    "line2": {
+      "type": "curve",
+      "details": {},
+      "input": {
+        "node": "test1",
+        "param": "output1"
+      },
+      "output": {
+        "node": "test2",
+        "param": "input1"
+      }
+    },
+    "line3": {
+      "type": "curve",
+      "details": {},
+      "input": {
+        "node": "test1",
+        "param": "output2"
+      },
+      "output": {
+        "node": "test4",
+        "param": "input2"
+      }
+    },
+    "line4": {
+      "type": "curve",
+      "details": {},
+      "input": {
+        "node": "test3",
+        "param": "output1"
+      },
+      "output": {
+        "node": "test4",
+        "param": "input1"
+      }
+    }
+  }
+}

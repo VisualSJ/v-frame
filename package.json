@@ -2,12 +2,10 @@
   "name": "v-frame",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": ".eslintrc.js",
   "scripts": {
-    "dev": "node ./scripts/dev",
-    "start": "node playwright/server.js",
-    "build": "node ./scripts/build",
-    "test": "cd ./playwright && npx playwright test"
+    "server": "node ./example/server",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
@@ -17,6 +15,6 @@
     "esbuild": "^0.15.13"
   },
   "dependencies": {
-    "chokidar": "^3.5.3"
+    "express": "^4.18.2"
   }
 }
