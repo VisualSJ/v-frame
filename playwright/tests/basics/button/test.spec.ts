@@ -13,21 +13,21 @@ test.describe('NumInput', () => {
     test.use({ viewport: { width: 600, height: 1000 } });
 
     test('Display', async ({ page }) => {
-        await page.goto('http://127.0.0.1:3000/basics/radio/display.html');
+        await page.goto('http://127.0.0.1:4004/basics/radio/display.html');
 
         // TODO 对比图不应该上传 git，暂时不提交
         // await expect(page).toHaveScreenshot();
     });
 
     // test('默认参数', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/operation.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/operation.html');
     //     const $operation = page.locator('#operation');
 
     //     await expect($operation).toHaveAttribute('value', '0');
     // });
 
     // test('输入 -> 焦点离开', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/operation.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/operation.html');
     //     const $operation = page.locator('#operation');
     //     const $operationEvent = page.locator('#operation-event');
 
@@ -41,7 +41,7 @@ test.describe('NumInput', () => {
     // });
 
     // test('输入 -> Escape', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/operation.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/operation.html');
     //     const $operation = page.locator('#operation');
     //     const $operationEvent = page.locator('#operation-event');
 
@@ -58,7 +58,7 @@ test.describe('NumInput', () => {
     // });
 
     // test('输入 -> Enter', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/operation.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/operation.html');
     //     const $operation = page.locator('#operation');
     //     const $operationEvent = page.locator('#operation-event');
 
@@ -75,7 +75,7 @@ test.describe('NumInput', () => {
     // });
 
     // test('Readonly -> Enter', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/readonly.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/readonly.html');
     //     const $operation = page.locator('#operation');
     //     const $operationEvent = page.locator('#operation-event');
 
@@ -193,7 +193,7 @@ test.describe('NumInput', () => {
     // });
 
     // test('Disabled -> Enter', async ({ page }) => {
-    //     await page.goto('http://127.0.0.1:3000/basics/radio/disabled.html');
+    //     await page.goto('http://127.0.0.1:4004/basics/radio/disabled.html');
     //     const $operation = page.locator('#operation');
     //     const $operationEvent = page.locator('#operation-event');
     //     await $operation.click();

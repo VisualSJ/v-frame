@@ -19,6 +19,8 @@ ${style.hollow}
 ${style.line}
 
 :host {
+    --bar-width: calc(var(--size-line) * 0.5px);
+
     width: 150px;
     border-radius: 2px;
     height: var(--line-height);
@@ -65,8 +67,6 @@ ${style.line}
     `,
 
     attrs: {
-        // size() {},
-        // color() {},
         value(value, legacy) {
             const num = parseStringToNumber(value, this.data.stash.min, this.data.stash.max);
             const $input = this.querySelector('input');
