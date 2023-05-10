@@ -2,4 +2,6 @@
 
 export { GraphElement } from './element';
 
-export { registerNode, registerLine } from './manager';
+export { ParamConnectData } from './interface';
+
+export { registerNode, registerLine, registerGraphOption } from './manager';

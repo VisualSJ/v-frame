@@ -1,6 +1,7 @@
 'use strict';
 
-import { ParamConnectData, LineInfo, NodeInfo, GraphOption } from './interface';
+import { LineInfo, NodeInfo, GraphOption } from './interface';
+import type { ParamConnectData } from './element/data';
 
 /**
  * Type 管理器
@@ -158,18 +159,24 @@ g[type="straight"] > polygon {
     fill: #fafafa;
 }
     `,
-    updateSVGPath($g, scale, info) {
-        const ct1x = (info.x2 - info.x1) / 2;
-        const ct1y = (info.y2 - info.y1) / 2
-        const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
-        const c1x = info.x2 - ct1x; // 三角形顶点坐标
-        const c1y = info.y2 - ct1y;
+    updateSVGPath($g, scale, data) {
+        if (!data.line.input.param) {
+            data.shortestInput();
+        }
+        if (!data.line.output.param) {
+            data.shortestOutput();
+        }
+        const ct1x = (data.x2 - data.x1) / 2;
+        const ct1y = (data.y2 - data.y1) / 2
+        const angle = getAngle(data.x1, data.y1, data.x2, data.y2);
+        const c1x = data.x2 - ct1x; // 三角形顶点坐标
+        const c1y = data.y2 - ct1y;
         const c2x = c1x + 6;
         const c2y = c1y - 7;
         const c3x = c1x - 6;
         const c3y = c1y - 7;
         const $path = $g.querySelector(`path`)!;
-        $path.setAttribute('d', `M${info.x1},${info.y1} L${info.x2},${info.y2}`);
+        $path.setAttribute('d', `M${data.x1},${data.y1} L${data.x2},${data.y2}`);
 
         const $polygon = $g.querySelector(`polygon`)!;
         $polygon.setAttribute('points', `${c1x},${c1y} ${c2x},${c2y} ${c3x},${c3y}`);
@@ -197,85 +204,91 @@ g[type="curve"] > path {
     animation: strokeMove 30s linear infinite;
 }
     `,
-    updateSVGPath($g, scale, info) {
+    updateSVGPath($g, scale, data) {
+        if (!data.line.input.param) {
+            data.shortestInput();
+        }
+        if (!data.line.output.param) {
+            data.shortestOutput();
+        }
         let cpx1 = 0; // 起始点的控制点上的 x 坐标
         let cpy1 = 0; // 起始点的控制点上的 y 坐标
         let cpx2 = 0; // 终点的控制点上的 x 坐标
         let cpy2 = 0; // 终点的控制点上的 y 坐标
 
-        if (info.d1 === 1) {
-            cpx1 = info.x1;
-            cpy1 = (info.y1 + info.y2) / 2;
+        if (data.d1 === 1) {
+            cpx1 = data.x1;
+            cpy1 = (data.y1 + data.y2) / 2;
         } else {
-            cpx1 = (info.x1 + info.x2) / 2;
-            cpy1 = info.y1;
+            cpx1 = (data.x1 + data.x2) / 2;
+            cpy1 = data.y1;
         }
-        if (info.d2 === 1) {
-            cpx2 = info.x2;
-            cpy2 = (info.y1 + info.y2) / 2;
+        if (data.d2 === 1) {
+            cpx2 = data.x2;
+            cpy2 = (data.y1 + data.y2) / 2;
         } else {
-            cpx2 = (info.x1 + info.x2) / 2;
-            cpy2 = info.y2;
+            cpx2 = (data.x1 + data.x2) / 2;
+            cpy2 = data.y2;
         }
 
         // 生成曲线的时候，如果是单向曲线，需要预留的最低宽度
         const cm = scale * 100;
 
-        switch (info.r1) {
+        switch (data.r1) {
             case 'left':
-                if (cpx1 - info.x1 > -cm) {
-                    cpx1 = info.x1 - cm;
+                if (cpx1 - data.x1 > -cm) {
+                    cpx1 = data.x1 - cm;
                 }
-                cpy1 = info.y1;
+                cpy1 = data.y1;
                 break;
             case 'right':
-                if (cpx1 - info.x1 < cm) {
-                    cpx1 = info.x1 + cm;
+                if (cpx1 - data.x1 < cm) {
+                    cpx1 = data.x1 + cm;
                 }
-                cpy1 = info.y1;
+                cpy1 = data.y1;
                 break;
             case 'down':
-                if (cpy1 - info.y1 < cm) {
-                    cpy1 = info.y1 + cm;
+                if (cpy1 - data.y1 < cm) {
+                    cpy1 = data.y1 + cm;
                 }
-                cpx1 = info.x1;
+                cpx1 = data.x1;
                 break;
             case 'up':
-                if (cpy1 - info.y1 > -cm) {
-                    cpy1 = info.y1 - cm;
+                if (cpy1 - data.y1 > -cm) {
+                    cpy1 = data.y1 - cm;
                 }
-                cpx1 = info.x1;
+                cpx1 = data.x1;
                 break;
         }
-        switch (info.r2) {
+        switch (data.r2) {
             case 'left':
-                if (cpx2 - info.x2 > -cm) {
-                    cpx2 = info.x2 - cm;
+                if (cpx2 - data.x2 > -cm) {
+                    cpx2 = data.x2 - cm;
                 }
-                cpy2 = info.y2;
+                cpy2 = data.y2;
                 break;
             case 'right':
-                if (cpx2 - info.x2 < cm) {
-                    cpx2 = info.x2 + cm;
+                if (cpx2 - data.x2 < cm) {
+                    cpx2 = data.x2 + cm;
                 }
-                cpy2 = info.y2;
+                cpy2 = data.y2;
                 break;
             case 'down':
-                if (cpy2 - info.y2 < cm) {
-                    cpy2 = info.y2 + cm;
+                if (cpy2 - data.y2 < cm) {
+                    cpy2 = data.y2 + cm;
                 }
-                cpx2 = info.x2;
+                cpx2 = data.x2;
                 break;
             case 'up':
-                if (cpy2 - info.y2 > -cm) {
-                    cpy2 = info.y2 - cm;
+                if (cpy2 - data.y2 > -cm) {
+                    cpy2 = data.y2 - cm;
                 }
-                cpx2 = info.x2;
+                cpx2 = data.x2;
                 break;
         }
 
         const $path = $g.querySelector(`path`)!;
-        $path.setAttribute('d', `M${info.x1},${info.y1} C${cpx1},${cpy1} ${cpx2},${cpy2} ${info.x2},${info.y2}`);
+        $path.setAttribute('d', `M${data.x1},${data.y1} C${cpx1},${cpy1} ${cpx2},${cpy2} ${data.x2},${data.y2}`);
     },
 });
 registerLine('*', '*', queryLine('*', 'curve'));

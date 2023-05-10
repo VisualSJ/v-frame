@@ -43,7 +43,7 @@ export interface NodeInfo {
 // 图里的线段信息
 export interface LineInfo {
     // 线条类型，曲线，直线
-    type: 'curve' | 'straight';
+    type: string;
     // 附加描述信息
     details: { [key: string]: any };
     // 线段开始连接的节点

@@ -114,7 +114,7 @@ export const data = {
                 y: 340,
             },
             details: {
-                name: 'Composition',
+                name: 'Realization',
                 property: [],
                 function: [],
             },
@@ -126,7 +126,43 @@ export const data = {
                 y: 380,
             },
             details: {
+                name: 'Association',
+                property: [],
+                function: [],
+            },
+        },
+        'test-8': {
+            type: 'class-node',
+            position: {
+                x: 120,
+                y: 420,
+            },
+            details: {
                 name: 'Aggregation',
+                property: [],
+                function: [],
+            },
+        },
+        'test-9': {
+            type: 'class-node',
+            position: {
+                x: 120,
+                y: 460,
+            },
+            details: {
+                name: 'Composition',
+                property: [],
+                function: [],
+            },
+        },
+        'test-10': {
+            type: 'class-node',
+            position: {
+                x: 120,
+                y: 500,
+            },
+            details: {
+                name: 'Dependency',
                 property: [],
                 function: [],
             },
@@ -174,7 +210,7 @@ export const data = {
             },
         },
         line5: {
-            type: 'composition',
+            type: 'realization',
             details: {},
             input: {
                 node: 'test-6',
@@ -184,10 +220,40 @@ export const data = {
             },
         },
         line6: {
-            type: 'aggregation',
+            type: 'association',
             details: {},
             input: {
                 node: 'test-7',
+            },
+            output: {
+                node: 'test-4',
+            },
+        },
+        line7: {
+            type: 'aggregation',
+            details: {},
+            input: {
+                node: 'test-8',
+            },
+            output: {
+                node: 'test-4',
+            },
+        },
+        line8: {
+            type: 'composition',
+            details: {},
+            input: {
+                node: 'test-9',
+            },
+            output: {
+                node: 'test-4',
+            },
+        },
+        line9: {
+            type: 'dependency',
+            details: {},
+            input: {
+                node: 'test-10',
             },
             output: {
                 node: 'test-4',

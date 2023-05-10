@@ -13,8 +13,17 @@
   <v-graph type="test-graph"></v-graph>
 
   <script type="module">
-    import { registerNode } from './ui-graph.esm.js';
+    import { registerNode, registerGraphOption } from './ui-graph.esm.js';
     import { data } from './index-data.esm.js';
+
+    registerGraphOption('test-graph', {
+        type: 'mesh',
+        meshSize: 70,
+        meshColor: '#333',
+        backgroundColor: '#1f1f1f',
+        originPoint: true,
+        originColor: '#555',
+    });
 
     ////////////// test-a
 
@@ -93,12 +102,6 @@
 
       onInit(details) {
         this.querySelector('.center > div').innerHTML = details.label;
-        this.addEventListener('connect-line', (event) => {
-          event.stopPropagation();
-          event.preventDefault();
-          const { node, param, paramDirection } = event.detail;
-          this.methods.startConnect('curve', param, paramDirection);
-        });
       },
 
       onMounted() {},
@@ -198,12 +201,6 @@
         this.querySelector('section').addEventListener('mousedown', (event) => {
           event.stopPropagation();
           event.preventDefault();
-        });
-        this.addEventListener('connect-line', (event) => {
-          event.stopPropagation();
-          event.preventDefault();
-          const { node, param, paramDirection } = event.detail;
-          this.methods.startConnect('curve', param, paramDirection);
         });
       },
 

@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement, BaseElement, style } from '@itharbors/ui-core';
+import { createElement, BaseElement, CustomElementOption } from '@itharbors/ui-core';
 import { queryNode } from '../manager';
 
 type GraphNodeElementData = {
@@ -18,27 +18,39 @@ type GraphNodeElementData = {
     moveStartPoint: { x: number, y: number, pageX: number, pageY: number };
 };
 
-export const GraphNodeElement = createElement('graph-node', {
-    template: /*html*/``,
-    style: /*css*/``,
+class GraphNodeOption extends CustomElementOption {
+    template = /*html*/``;
 
-    attrs: {},
+    style = /*css*/``;
 
-    data: {
+    attrs = {};
+
+    data = {
         type: '',
         details: {},
         position: { x: 0, y: 0 },
+        moveStartPoint: { x: 0, y: 0, pageX: 0, pageY: 0, },
+    } as GraphNodeElementData;
 
-        moveStartPoint: { x: 0, y: 0, pageX: 0, pageY: 0 },
-    } as GraphNodeElementData,
-
-    methods: {
+    methods = {
         startMove() {
             const $elem = this as unknown as BaseElement;
             $elem.setAttribute('moveing', '');
+            let t = false;
             const scale = $elem.data.getProperty('scale');
             const moveStartPoint = $elem.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
             const mousemove = (event: MouseEvent) => {
+                if (!t) {
+                    const position = $elem.data.getProperty('position');
+                    const scale = $elem.data.getProperty('scale');
+                    const moveStartPoint = $elem.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
+                    moveStartPoint.x = position.x * scale;
+                    moveStartPoint.y = position.y * scale;
+                    moveStartPoint.pageX = event.pageX;
+                    moveStartPoint.pageY = event.pageY;
+                    t = true;
+                }
+
                 const offset = {
                     x: event.pageX - moveStartPoint.pageX,
                     y: event.pageY - moveStartPoint.pageY,
@@ -96,12 +108,54 @@ export const GraphNodeElement = createElement('graph-node', {
             $elem.dispatchEvent(custom);
         },
 
+        hasConnect() {
+            const $elem = this as unknown as BaseElement;
+            const $graph = $elem.getRootNode();
+            // @ts-ignore
+            return $graph.host.methods.hasConnect();
+        },
+
         stopConnect() {
 
         },
-    },
 
-    onInit() {
+        bindDefaultParamEvent() {
+            const $elem = this as unknown as BaseElement;
+            const $paramList = $elem.querySelectorAll(`v-graph-node-param`);
+            Array.prototype.forEach.call($paramList, ($param) => {
+                $param.addEventListener('mousedown', (event: MouseEvent) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+
+                    const name = $param.getAttribute('name');
+                    if (!name) {
+                        return;
+                    }
+                    const paramDirection = $param.getAttribute('direction');
+                    if (paramDirection !== 'input' && paramDirection !== 'output') {
+                        return;
+                    }
+                    // @ts-ignore
+                    ($elem.methods as this)
+                        .startConnect('', name, paramDirection);
+                });
+            });
+        },
+
+        bindDefaultMoveEvent() {
+            const $elem = this as unknown as BaseElement;
+            // 拖拽移动
+            $elem.addEventListener('mousedown', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                //@ts-ignore
+                ($elem.methods as this)
+                    .startMove();
+            });
+        },
+    }
+
+    onInit(this: BaseElement & this) {
         this.data.addPropertyListener('type', (type, legacy) => {
             const graphType = this.data.getProperty('graphType');
             const panel = queryNode(graphType, type);
@@ -121,49 +175,6 @@ export const GraphNodeElement = createElement('graph-node', {
         this.data.addPropertyListener('position', (position, legacy) => {
             this.setAttribute('style', `--offset-x: ${position.x}px; --offset-y: ${position.y}px;`);
         });
-
-        // 拖拽移动
-        this.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-
-            const position = this.data.getProperty('position');
-            const scale = this.data.getProperty('scale');
-            const moveStartPoint = this.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
-            moveStartPoint.x = position.x * scale;
-            moveStartPoint.y = position.y * scale;
-            moveStartPoint.pageX = event.pageX;
-            moveStartPoint.pageY = event.pageY;
-            this.methods.startMove();
-        });
-
-        this.shadowRoot.addEventListener('connect-line', (event: any) => {
-            event.stopPropagation();
-            event.preventDefault();
-            const $elem = this as unknown as BaseElement;
-            const uuid = $elem.data.getAttribute('node-uuid');
-            if (!uuid) {
-                return;
-            }
-            const { param, paramDirection } = event.detail;
-            const custom = new CustomEvent('connect-line', {
-                bubbles: false,
-                cancelable: true,
-                detail: {
-                    node: uuid,
-                    param,
-                    paramDirection,
-                },
-            });
-            $elem.dispatchEvent(custom);
-        });
-    },
-
-    onMounted() {
-
-    },
-
-    onRemoved() {
-
-    },
-});
+    }
+}
+export const GraphNodeElement = createElement('graph-node', GraphNodeOption);

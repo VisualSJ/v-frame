@@ -5,8 +5,7 @@ import { BaseElement } from './element.js';
 
 export { BaseElement };
 
-
-class CustomElement {
+export class CustomElementOption {
     template: string = '';
     style: string = '';
     attrs: {
@@ -15,52 +14,37 @@ class CustomElement {
     data: {
         [key: string]: string | number | boolean | object;
     } = {};
-    onInit(...args: any[]): void {};
-    onMounted(...args: any[]): void {};
-    onRemoved(...args: any[]): void {};
+    methods: {
+        [key: string]: (...args: any[]) => void;
+    } = {};
+    onInit(this: BaseElement, ...args: any[]): void {};
+    onMounted(this: BaseElement, ...args: any[]): void {};
+    onRemoved(this: BaseElement, ...args: any[]): void {};
 }
 
-export function createElement
-<T extends {
-    template: string;
-    style: string;
-    attrs: {
-        [key: string]: (this: BaseElement, value: string, legacy: string) => void;
-    },
-    data: {
-        [key: string]: string | number | boolean | object;
-    },
-    onInit   (this: BaseElement & { methods: A; }, ...args: any[]): void;
-    onMounted(this: BaseElement & { methods: A; }, ...args: any[]): void;
-    onRemoved(this: BaseElement & { methods: A; }, ...args: any[]): void;
-}, A>
-(name: string, options: T & { methods: A; }): typeof BaseElement {
-
+export function createElement(name: string, options: typeof CustomElementOption): typeof BaseElement {
+    const elemOptions = new options();
     class CustomElement extends BaseElement {
         static get observedAttributes(): string[] {
-            return Object.keys(options.attrs);
+            return Object.keys(elemOptions.attrs);
         }
 
-        protected HTMLTemplate: string = options.template;
-        protected HTMLStyle: string = options.style;
+        protected HTMLTemplate: string = elemOptions.template;
+        protected HTMLStyle: string = elemOptions.style;
 
-        methods: {
-            [key in keyof A]: A[key];
-        };
+        methods = elemOptions.methods;
 
         constructor() {
             super();
-            for (let key in options.attrs) {
-                this.data.addAttributeListener(key, options.attrs[key]);
+            for (let key in elemOptions.attrs) {
+                this.data.addAttributeListener(key, elemOptions.attrs[key]);
             }
-            this.data.stash = JSON.parse(JSON.stringify(options.data));
+            this.data.stash = JSON.parse(JSON.stringify(elemOptions.data));
 
-            const methods = { ...options.methods, };
+            const methods = { ...elemOptions.methods, };
             for (let key in methods) {
-                // @ts-ignore
                 methods[key] = (...args: any[]) => {
-                    // @ts-ignore
-                    options.methods[key].call(this, ...args);
+                    return elemOptions.methods[key].call(this, ...args);
                 };
             }
             this.methods = methods;
@@ -69,15 +53,15 @@ export function createElement
         }
 
         protected onInit(...args: any[]) {
-            options.onInit.call(this, ...args);
+            elemOptions.onInit.call(this, ...args);
         };
     
         protected onMounted(...args: any[]) {
-            options.onMounted.call(this, ...args);
+            elemOptions.onMounted.call(this, ...args);
         };
     
         protected onRemoved(...args: any[]) {
-            options.onRemoved.call(this, ...args);
+            elemOptions.onRemoved.call(this, ...args);
         };
     }
 

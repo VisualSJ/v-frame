@@ -4,14 +4,6 @@ export const data = {
         x: 0,
         y: 0,
     },
-    option: {
-        type: 'mesh',
-        meshSize: 70,
-        meshColor: '#333',
-        backgroundColor: '#1f1f1f',
-        originPoint: true,
-        originColor: '#555',
-    },
     nodes: {
         'test-c-1': {
             type: 'test-c',

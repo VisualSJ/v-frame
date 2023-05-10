@@ -4,12 +4,6 @@ export const data = {
         x: 0,
         y: 0,
     },
-    option: {
-        type: 'pure',
-        meshSize: 70,
-        meshColor: '#333',
-        backgroundColor: '#333',
-    },
     nodes: {
         'test-1-1': {
             type: 'node',

@@ -1,50 +1,14 @@
 'use strict';
 
-import { createElement, BaseElement, style } from '@itharbors/ui-core';
+import { createElement, BaseElement, style, CustomElementOption } from '@itharbors/ui-core';
 
-export const GraphNodeParamElement = createElement('graph-node-param', {
-    template: /*html*/`<slot></slot>`,
-    style: /*css*/`
-:host { display: block; position: relative; }
-    `,
+class GraphNodeParamOption extends CustomElementOption {
+    template = /*html*/`<slot></slot>`;
+    style = /*css*/`:host { display: block; position: relative; }`;
+    attrs = {};
+    data = {};
+    methods = {};
+    onInit(this: BaseElement & this) {}
+}
 
-    attrs: {},
-
-    data: {} as {},
-
-    methods: {},
-
-    onInit() {
-        // 开始连接其他参数
-        this.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-
-            const name = this.data.getAttribute('name');
-            if (!name) {
-                return;
-            }
-            const paramDirection = this.data.getAttribute('direction');
-            if (paramDirection !== 'input' && paramDirection !== 'output') {
-                return;
-            }
-            const custom = new CustomEvent('connect-line', {
-                bubbles: true,
-                cancelable: true,
-                detail: {
-                    param: name,
-                    paramDirection,
-                },
-            });
-            this.dispatchEvent(custom);
-        });
-    },
-
-    onMounted() {
-
-    },
-
-    onRemoved() {
-
-    },
-});
+export const GraphNodeParamElement = createElement('graph-node-param', GraphNodeParamOption);
