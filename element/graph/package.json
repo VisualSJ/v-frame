@@ -13,6 +13,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@itharbors/ui-core": "^0.2.0"
+    "@itharbors/ui-core": "^0.2.2"
   }
 }

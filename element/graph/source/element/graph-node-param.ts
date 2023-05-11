@@ -1,14 +1,10 @@
 'use strict';
 
-import { createElement, BaseElement, style, CustomElementOption } from '@itharbors/ui-core';
+import { registerElement, BaseElement } from '@itharbors/ui-core';
 
-class GraphNodeParamOption extends CustomElementOption {
-    template = /*html*/`<slot></slot>`;
-    style = /*css*/`:host { display: block; position: relative; }`;
-    attrs = {};
-    data = {};
-    methods = {};
-    onInit(this: BaseElement & this) {}
+export class GraphNodeParamElement extends BaseElement {
+    get HTMLTemplate() { return /*html*/`<slot></slot>`; }
+    get HTMLStyle() { return /*css*/`:host { display: block; position: relative; }`; }
 }
 
-export const GraphNodeParamElement = createElement('graph-node-param', GraphNodeParamOption);
+registerElement('graph-node-param', GraphNodeParamElement);

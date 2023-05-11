@@ -2,6 +2,7 @@
 
 import { LineInfo, NodeInfo, GraphOption } from './interface';
 import type { ParamConnectData } from './element/data';
+import type { GraphNodeElement } from './element/graph-node';
 
 /**
  * Type 管理器
@@ -11,7 +12,7 @@ import type { ParamConnectData } from './element/data';
 interface NodeTypeOption {
     template: string;
     style: string;
-    onInit(...args: any[]): void;
+    onInit(this: GraphNodeElement, ...args: any[]): void;
 }
 
 interface LineTypeOption {

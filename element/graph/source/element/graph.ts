@@ -1,6 +1,6 @@
 'use strict';
 
-import { createElement, BaseElement, style, CustomElementOption } from '@itharbors/ui-core';
+import { registerElement, BaseElement, style, CustomElementOption } from '@itharbors/ui-core';
 
 import { ParamConnectData } from './data';
 
@@ -12,17 +12,17 @@ const nodeToElem: WeakMap<NodeInfo, HTMLElement> = new WeakMap();
 
 const graphUtils = {
 
-    resizeCanvas($elem: BaseElement, $canvas: HTMLCanvasElement, box: {width: number, height: number}) {
+    resizeCanvas($elem: GraphElement, $canvas: HTMLCanvasElement, box: {width: number, height: number}) {
         $canvas.setAttribute('width', box.width + '');
         $canvas.setAttribute('height', box.height + '');
 
-        const calibration = $elem.data.getProperty('calibration') as { x: number, y: number, };
+        const calibration = $elem.data.getProperty('calibration');
         calibration.x = box.width / 2;
         calibration.y = box.height / 2;
         $elem.data.emitProperty('calibration', calibration, calibration);
     },
 
-    renderMesh($elem: BaseElement, ctx: CanvasRenderingContext2D, box: {width: number, height: number}, offset: {x: number, y: number}, scale: number, option: GraphOption) {
+    renderMesh($elem: GraphElement, ctx: CanvasRenderingContext2D, box: {width: number, height: number}, offset: {x: number, y: number}, scale: number, option: GraphOption) {
         $elem.setAttribute('style', `--background-color: ${option.backgroundColor};`);
         const step = (option.meshSize || 50) * scale;
 
@@ -95,13 +95,12 @@ const graphUtils = {
         }
     },
 
-    renderNodes($elem: BaseElement, offset: {x: number, y: number}, scale: number) {
+    renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale: number) {
         const $nodes = $elem.querySelectorAll('#nodes > v-graph-node');
-        const nodes = $elem.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
+        const nodes = $elem.data.getProperty('nodes');
         const graphType = $elem.data.getAttribute('type') || 'default';
 
         const $root = $elem.querySelector('#nodes')!;
-        // $root.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
 
         const refreshFlag = new Set();
         // 循环已有的 HTML 节点
@@ -197,10 +196,10 @@ const graphUtils = {
         lineAdapter.updateSVGPath($line, 1, d);
     },
 
-    renderLines($elem: BaseElement, offset: {x: number, y: number }, scale: number) {
+    renderLines($elem: GraphElement, offset: {x: number, y: number }, scale: number) {
         const graphType = $elem.data.getAttribute('type') || 'default';
-        const lines = $elem.data.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-        const nodes = $elem.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
+        const lines = $elem.data.getProperty('lines');
+        const nodes = $elem.data.getProperty('nodes');
         const $lines = $elem.querySelectorAll('#lines > g[line-uuid]');
         const $root = $elem.querySelector('#lines')!;
 
@@ -246,7 +245,7 @@ const graphUtils = {
         }
     },
 
-    bindEventListener($elem: BaseElement) {
+    bindEventListener($elem: GraphElement) {
         // 阻止右键菜单
         $elem.addEventListener('contextmenu', (event) => {
             event.stopPropagation();
@@ -304,16 +303,18 @@ const graphUtils = {
     },
 };
 
-class GraphElementOption extends CustomElementOption {
-    template = /*html*/`
+export class GraphElement extends BaseElement {
+    get HTMLTemplate() {
+        return /*html*/`
 <canvas id="meshes"></canvas>
 <div id="dom-box">
     <svg id="lines"></svg>
     <div id="nodes"></div>
-</div>
-    `;
+</div>`;
+    } 
 
-    style = /*css*/`
+    get HTMLStyle() {
+        return /*css*/`
 ${style.solid}
 ${style.line}
 :host {
@@ -366,201 +367,201 @@ v-graph-node {
 v-graph-node[moveing] {
     z-index: 999;
 }
-    `;
+        `;
+    }
 
-    attrs = {
-        type(value: string) {
+    get defaultData(): {
+        offset: { x: number, y: number, };
+        calibration: { x: number, y: number, };
+        scale: number;
+        nodes: { [key: string]: NodeInfo | undefined, };
+        lines: { [key: string]: LineInfo | undefined, };
+    } {
+        return {
+            // 中心偏移量，记录的是节点坐标系内的偏移量
+            offset: { x: 0, y: 0, },
+            // 记录节点坐标系与 html 坐标系的偏差
+            calibration: { x: 0, y: 0, },
+    
+            // 缩放比例
+            scale: 0,
+            nodes: {},
+            lines: {},
+        };
+    }
 
-        },
-    };
+    /**
+     * 生成一个 node 数据
+     * @param type
+     */
+    generateNode(type?: string): NodeInfo {
+        return {
+            type: type || 'unknown',
+            position: { x: 0, y: 0 },
+            details: {},
+        };
+    }
 
-    data = {
-        // 中心偏移量，记录的是节点坐标系内的偏移量
-        offset: { x: 0, y: 0, },
-        // 记录节点坐标系与 html 坐标系的偏差
-        calibration: { x: 0, y: 0, },
+    /**
+     * 生成一个 line 数据
+     * @param type
+     */
+    generateLine(type?: string): LineInfo {
+        return {
+            type: type || 'straight',
+            details: {},
+            input: {
+                node: '',
+            },
+            output: {
+                node: '',
+            },
+        };
+    }
+    /**
+     * 添加一个 node 数据
+     * @param node 
+     * @param id 
+     */
+    addNode(node: NodeInfo, id?: string) {
+        const uuid: string = id || generateUUID();
+        const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+        nodes[uuid] = node;
+        this.data.emitProperty('nodes', nodes, nodes);
+    }
 
-        // 缩放比例
-        scale: 0,
-        nodes: {},
-        lines: {},
-    };
+    /**
+     * 添加一个 line 数据
+     * @param line 
+     * @param id 
+     */
+    addLine(line: LineInfo, id?: string) {
+        const lines = this.getProperty('lines') as { [key: string]: LineInfo | undefined  };
+        const nodes = this.data.getProperty('nodes');
+        const graphType = this.data.getAttribute('type') || 'default';
+        const lineFilter = queryGraphFliter(graphType, 'lineFilter');
+        const input = queryParamInfo(this, line.input.node, line.input.param);
+        const output = queryParamInfo(this, line.output.node, line.output.param);
+        if (lineFilter!(nodes, lines, line, input, output)) {
+            lines[id || generateUUID()] = line;
+            this.data.emitProperty('lines', lines, lines);
+        }
+    }
 
-    methods = {
-        /**
-         * 生成一个 node 数据
-         */
-        generateNode(type?: string): NodeInfo {
-            return {
-                type: type || 'unknown',
-                position: { x: 0, y: 0 },
-                details: {},
-            };
-        },
+    /**
+     * 获取一个节点
+     * @param id 
+     * @returns 
+     */
+    getNode(id: string) {
+        const nodes = this.data.getProperty('nodes');
+        return nodes[id];
+    }
 
-        /**
-         * 生成一个 line 数据
-         */
-        generateLine(type?: string): LineInfo {
-            return {
-                type: type || 'straight',
-                details: {},
-                input: {
-                    node: '',
-                },
-                output: {
-                    node: '',
-                },
-            };
-        },
+    /**
+     * 获取一个线段
+     * @param id 
+     * @returns 
+     */
+    getLine(id: string) {
+        const lines = this.data.getProperty('lines');
+        return lines[id];
+    }
 
-        /**
-         * 添加一个 node 数据
-         * @param node 
-         */
-        addNode(node: NodeInfo, id?: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
-            nodes[id || generateUUID()] = node;
-            $elem.data.emitProperty('nodes', nodes, nodes);
-        },
+    /**
+     * 删除一个 Node
+     * @param id 
+     */
+    removeNode(id: string) {
+        const nodes = this.getProperty('nodes');
+        delete nodes[id];
+        this.data.emitProperty('nodes', nodes, nodes);
+    }
 
-        /**
-         * 添加一个 line 数据
-         * @param line 
-         */
-        addLine(line: LineInfo, id?: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const lines = $elem.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-            const nodes = $elem.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
-            const graphType = $elem.data.getAttribute('type') || 'default';
-            const lineFilter = queryGraphFliter(graphType, 'lineFilter');
-            const input = queryParamInfo($elem, line.input.node, line.input.param);
-            const output = queryParamInfo($elem, line.output.node, line.output.param);
-            if (lineFilter!(nodes, lines, line, input, output)) {
-                lines[id || generateUUID()] = line;
-                $elem.data.emitProperty('lines', lines, lines);
+    /**
+     * 删除一条连接线
+     * @param id 
+     */
+    removeLine(id: string) {
+        const lines = this.getProperty('lines');
+        delete lines[id];
+        this.data.emitProperty('lines', lines, lines);
+    }
+
+    /**
+     * 开始连接节点/参数
+     * @param lineType 
+     * @param nodeUUID 
+     * @param paramName 
+     * @param paramDirection 
+     * @returns 
+     */
+    startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output') {
+        const lines = this.data.getProperty('lines') as { [key: string]: LineInfo | undefined, };
+        let line = this.getLine('connect-param-line');
+        // 如果已经有线段了，说明是连接第二个点
+        if (line) {
+            this.stopConnect();
+            let dt: 'input' | 'output' = 'output';
+            if (paramDirection === 'output') {
+                dt = 'input';
             }
-        },
-
-        /**
-         * 获取一个节点
-         * @param id 
-         * @returns 
-         */
-        getNode(id: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const nodes = $elem.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
-            return nodes[id];
-        },
-
-        /**
-         * 获取一个线段
-         * @param id 
-         * @returns 
-         */
-        getLine(id: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const lines = $elem.data.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-            return lines[id];
-        },
-
-        /**
-         * 删除一个 Node
-         * @param id 
-         */
-        removeNode(id: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined  };
-            delete nodes[id];
-            $elem.data.emitProperty('nodes', nodes, nodes);
-        },
-
-        /**
-         * 删除一条连接线
-         * @param id 
-         */
-        removeLine(id: string) {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const lines = $elem.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-            delete lines[id];
-            $elem.data.emitProperty('lines', lines, lines);
-        },
-
-        /**
-         * 开始连接节点/参数
-         * @param lineType 
-         * @param nodeUUID 
-         * @param paramName 
-         * @param paramDirection 
-         * @returns 
-         */
-        startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output') {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const lines = $elem.data.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-            let line = $elem.methods.getLine('connect-param-line');
-            // 如果已经有线段了，说明是连接第二个点
-            if (line) {
-                $elem.methods.stopConnect();
-                let dt: 'input' | 'output' = 'output';
-                if (paramDirection === 'output') {
-                    dt = 'input';
-                }
-                if (line[dt].__fake) {
-                    delete line[dt].__fake;
-                    line[dt].node = nodeUUID;
-                    line[dt].param = paramName;
-                    $elem.methods.addLine(line);
-                } else {
-                    $elem.data.emitProperty('lines', lines, lines);
-                }
-                return;
-            }
-            line = $elem.methods.generateLine(lineType);
-            const fake = $elem.methods.generateNode();;
-            if (paramDirection === 'input') {
-                line.output.node = nodeUUID;
-                line.output.param = paramName;
-                line.input.__fake = fake
-            } else if (paramDirection === 'output') {
-                line.input.node = nodeUUID;
-                line.input.param = paramName;
-                line.output.__fake = fake;
+            if (line[dt].__fake) {
+                delete line[dt].__fake;
+                line[dt].node = nodeUUID;
+                line[dt].param = paramName;
+                this.addLine(line);
             } else {
-                line.input.node = nodeUUID;
-                line.output.__fake = fake;
+                this.data.emitProperty('lines', lines, lines);
             }
-            // 绕过线段检查
-            lines['connect-param-line'] = line;
-            $elem.data.emitProperty('lines', lines, lines);
-            $elem.addEventListener('mousemove', (event) => {
-                const calibration = $elem.data.getProperty('calibration');
-                const scale = $elem.data.getProperty('scale');
-                const offset = $elem.data.getProperty('offset');
-                fake.position.x =  (event.clientX - calibration.x - offset.x) / scale;
-                fake.position.y =  (event.clientY - calibration.y - offset.y) / scale;
-                $elem.data.emitProperty('lines', lines, lines);
-            });
-        },
+            return;
+        }
+        line = this.generateLine(lineType);
+        const fake = this.generateNode();;
+        if (paramDirection === 'input') {
+            line.output.node = nodeUUID;
+            line.output.param = paramName;
+            line.input.__fake = fake
+        } else if (paramDirection === 'output') {
+            line.input.node = nodeUUID;
+            line.input.param = paramName;
+            line.output.__fake = fake;
+        } else {
+            line.input.node = nodeUUID;
+            line.output.__fake = fake;
+        }
+        // 绕过线段检查
+        lines['connect-param-line'] = line;
+        this.data.emitProperty('lines', lines, lines);
+        this.addEventListener('mousemove', (event) => {
+            const calibration = this.data.getProperty('calibration');
+            const scale = this.data.getProperty('scale');
+            const offset = this.data.getProperty('offset');
+            fake.position.x =  (event.clientX - calibration.x - offset.x) / scale;
+            fake.position.y =  (event.clientY - calibration.y - offset.y) / scale;
+            this.data.emitProperty('lines', lines, lines);
+        });
+    }
 
-        hasConnect() {
-            const $elem = this as unknown as BaseElement & { methods: GraphElementOption['methods'] };
-            const lines = $elem.data.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-            return !!$elem.methods.getLine('connect-param-line');
-        },
+    /**
+     * 是否正在连接动作中
+     * @returns 
+     */
+    hasConnect() {
+        const lines = this.data.getProperty('lines');
+        return !!this.getLine('connect-param-line');
+    }
 
-        /**
-         * 中断连接动作
-         */
-        stopConnect() {
-            const $elem = this as unknown as BaseElement;
-            const lines = $elem.data.getProperty('lines');
-            delete lines['connect-param-line'];
-            $elem.data.emitProperty('lines', lines, lines);
-        },
-    };
+    /**
+     * 中断连接动作
+     */
+    stopConnect() {
+        const lines = this.data.getProperty('lines');
+        delete lines['connect-param-line'];
+        this.data.emitProperty('lines', lines, lines);
+    }
 
-    onInit(this: BaseElement & this) {
+    onInit() {
         graphUtils.bindEventListener(this);
 
         // 初始化数据
@@ -624,12 +625,14 @@ v-graph-node[moveing] {
             event.stopPropagation();
             event.preventDefault();
             const { node, param, paramDirection, lineType } = event.detail;
-            this.methods.startConnect(lineType, node, param, paramDirection);
+            this.startConnect(lineType, node, param, paramDirection);
         });
 
         this.shadowRoot.addEventListener('mousedown', () => {
-            this.methods.stopConnect();
+            this.stopConnect();
         });
+
+        refresh();
     }
 }
-export const GraphElement = createElement('graph', GraphElementOption);
+registerElement('graph', GraphElement);

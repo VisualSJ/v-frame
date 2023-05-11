@@ -16,8 +16,18 @@ export class BaseElement extends HTMLElement {
         return [];
     }
 
-    protected HTMLTemplate: string = '';
-    protected HTMLStyle: string = '';
+    protected get HTMLTemplate(): string {
+        return '';
+    };
+    protected get HTMLStyle(): string {
+        return '';
+    };
+
+    get defaultData(): {
+        [key: string]: object | number | string | boolean | null;
+    } {
+        return {};
+    }
 
     querySelector(selector: string) {
         return this.shadowRoot.querySelector(selector);
@@ -27,7 +37,7 @@ export class BaseElement extends HTMLElement {
         return this.shadowRoot.querySelectorAll(selector);
     }
 
-    getProperty(key: string) {
+    getProperty<K extends string>(key: K): this['defaultData'][K] {
         return this.data.getProperty(key);
     }
 
@@ -49,6 +59,16 @@ export class BaseElement extends HTMLElement {
 
     protected initialize() {
         this.shadowRoot.innerHTML = `<style>${this.HTMLStyle}</style>${this.HTMLTemplate}`;
+        // for (let key in this.listener.attrs) {
+        //     this.data.addAttributeListener(key, this.listener.attrs[key]);
+        // }
+        for (let key in this.defaultData) {
+            if (key in this.data.stash) {
+                continue;
+            }
+            this.data.stash[key] = JSON.parse(JSON.stringify(this.defaultData[key]));
+        }
+        
         this.onInit();
         if (this.isConnected) {
             this.onMounted();
@@ -66,6 +86,7 @@ export class BaseElement extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
+        this.initialize();
     }
 
     attributeChangedCallback(key: string, legacy: string, value: string) {
@@ -81,9 +102,9 @@ export class BaseElement extends HTMLElement {
     }
 }
 
-class DataManager {
+class DataManager<T extends BaseElement> {
     private root: BaseElement;
-    constructor(root: BaseElement) {
+    constructor(root: T) {
         this.root = root;
     }
 
@@ -93,7 +114,7 @@ class DataManager {
         const legacy = this.getProperty(key);
         this.emitProperty(key, legacy, legacy);
     }
-    getProperty(key: string) {
+    getProperty<K extends string>(key: K): T['defaultData'][K] {
         return this.stash[key];
     }
     setProperty(key: string, value: any) {

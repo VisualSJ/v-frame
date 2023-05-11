@@ -101,6 +101,8 @@
       `,
 
       onInit(details) {
+        this.bindDefaultParamEvent();
+        this.bindDefaultMoveEvent();
         this.querySelector('.center > div').innerHTML = details.label;
       },
 
@@ -197,6 +199,8 @@
       `,
 
       onInit(details) {
+        this.bindDefaultParamEvent();
+        this.bindDefaultMoveEvent();
         this.querySelector('.center > div').innerHTML = details.label;
         this.querySelector('section').addEventListener('mousedown', (event) => {
           event.stopPropagation();
@@ -243,6 +247,8 @@
         `,
 
         onInit(details) {
+          // this.bindDefaultParamEvent();
+          this.bindDefaultMoveEvent();
           this.querySelector('.label').innerHTML = details.label;
           this.addEventListener('mousedown', (event) => {
             event.stopPropagation();

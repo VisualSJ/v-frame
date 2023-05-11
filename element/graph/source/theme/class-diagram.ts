@@ -375,10 +375,8 @@ registerNode('class-diagram', 'class-node', {
     `,
 
     onInit(details) {
-        const $elem = this as unknown as BaseElement;
-
-        const $menu = $elem.querySelector('.menu')!;
-        $elem.querySelector('.class-name')!.innerHTML = details.name;
+        const $menu = this.querySelector('.menu')!;
+        this.querySelector('.class-name')!.innerHTML = details.name;
 
         const updateHTML = (type: string, list: string[]) => {
             if (!Array.isArray(list)) {
@@ -388,33 +386,29 @@ registerNode('class-diagram', 'class-node', {
             for (const item of list) {
             HTML += `<div>${item}</div>`;
             }
-            $elem.querySelector(`.${type}`)!.innerHTML = HTML;
+            this.querySelector(`.${type}`)!.innerHTML = HTML;
         }
-        $elem.data.addPropertyListener('details', (details) => {
+        this.data.addPropertyListener('details', (details) => {
             updateHTML('property', details.property);
         });
         updateHTML('property', details.property);
 
-        $elem.data.addPropertyListener('details', (details) => {
+        this.data.addPropertyListener('details', (details) => {
             updateHTML('function', details.function);
         });
         updateHTML('function', details.function);
 
-        $elem.addEventListener('mousedown', (event) => {
+        this.addEventListener('mousedown', (event) => {
             event.stopPropagation();
             event.preventDefault();
 
             if (event.button === 0) {
-                // @ts-ignore
-                $elem.methods
-                    .startMove();
+                this.startMove();
                 return;
             }
 
-            // @ts-ignore
-            const methods = $elem.methods;
-            if (methods.hasConnect()) {
-                methods.startConnect();
+            if (this.hasConnect()) {
+                this.startConnect('');
                 return;
             }
             $menu.removeAttribute('hidden');
@@ -430,9 +424,7 @@ registerNode('class-diagram', 'class-node', {
             event.preventDefault();
             const type = (event.target! as HTMLDivElement).innerHTML.toLocaleLowerCase();
 
-            // @ts-ignore
-            const methods = $elem.methods;
-            methods.startConnect(type);
+            this.startConnect(type);
         });
     },
 });

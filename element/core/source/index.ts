@@ -8,66 +8,29 @@ export { BaseElement };
 export class CustomElementOption {
     template: string = '';
     style: string = '';
+
+    static attrListenList: string[] = [];
+
     attrs: {
         [key: string]: (this: BaseElement, value: string, legacy: string) => void;
     } = {};
+
     data: {
         [key: string]: string | number | boolean | object;
     } = {};
+
     methods: {
         [key: string]: (...args: any[]) => void;
     } = {};
-    onInit(this: BaseElement, ...args: any[]): void {};
-    onMounted(this: BaseElement, ...args: any[]): void {};
-    onRemoved(this: BaseElement, ...args: any[]): void {};
+
+    element: BaseElement;
+    constructor(elem: BaseElement) {
+        this.element = elem;
+    }
 }
 
-export function createElement(name: string, options: typeof CustomElementOption): typeof BaseElement {
-    const elemOptions = new options();
-    class CustomElement extends BaseElement {
-        static get observedAttributes(): string[] {
-            return Object.keys(elemOptions.attrs);
-        }
-
-        protected HTMLTemplate: string = elemOptions.template;
-        protected HTMLStyle: string = elemOptions.style;
-
-        methods = elemOptions.methods;
-
-        constructor() {
-            super();
-            for (let key in elemOptions.attrs) {
-                this.data.addAttributeListener(key, elemOptions.attrs[key]);
-            }
-            this.data.stash = JSON.parse(JSON.stringify(elemOptions.data));
-
-            const methods = { ...elemOptions.methods, };
-            for (let key in methods) {
-                methods[key] = (...args: any[]) => {
-                    return elemOptions.methods[key].call(this, ...args);
-                };
-            }
-            this.methods = methods;
-
-            this.initialize();
-        }
-
-        protected onInit(...args: any[]) {
-            elemOptions.onInit.call(this, ...args);
-        };
-    
-        protected onMounted(...args: any[]) {
-            elemOptions.onMounted.call(this, ...args);
-        };
-    
-        protected onRemoved(...args: any[]) {
-            elemOptions.onRemoved.call(this, ...args);
-        };
-    }
-
-    window.customElements.define(`v-${name}`, CustomElement);
-
-    return CustomElement;
+export function registerElement(name: string, element: typeof BaseElement) {
+    window.customElements.define(`v-${name}`, element);
 }
 
 export const style = {

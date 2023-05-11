@@ -93,17 +93,14 @@ registerNode('flow-chart', 'node', {
     `,
 
     onInit(details) {
-        const $elem = this as unknown as BaseElement;
-        // @ts-ignore
-        $elem.methods.bindDefaultMoveEvent();
+        this.bindDefaultMoveEvent();
 
         const updateHTML = (HTML: string) => {
-            $elem.querySelector(`.content`)!.innerHTML = HTML;
+            this.querySelector(`.content`)!.innerHTML = HTML;
         }
-        $elem.data.addPropertyListener('details', (details) => {
+        this.data.addPropertyListener('details', (details) => {
             updateHTML(details.label);
         });
         updateHTML(details.label);
-
     },
 });
