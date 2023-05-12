@@ -1,11 +1,11 @@
 'use strict';
 
-import { registerElement, BaseElement, style, CustomElementOption } from '@itharbors/ui-core';
+import { registerElement, BaseElement, style } from '@itharbors/ui-core';
 
 import { ParamConnectData } from './data';
 
 import { NodeInfo, LineInfo, GraphOption } from '../interface';
-import { intersect, getParamElementOffset, generateUUID, queryParamInfo } from './utils';
+import { getParamElementOffset, generateUUID, queryParamInfo } from './utils';
 import { queryLine, queryGraphFliter, queryGraphOption } from '../manager';
 
 const nodeToElem: WeakMap<NodeInfo, HTMLElement> = new WeakMap();

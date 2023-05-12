@@ -36,12 +36,10 @@ registerLine('class-diagram', 'inheritance', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
 
         const a = 10 * Math.cos((180 - angle) * Math.PI / 180);
@@ -85,12 +83,10 @@ registerLine('class-diagram', 'realization', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
 
         const c1x = info.x2; // 三角形顶点坐标
@@ -132,12 +128,10 @@ registerLine('class-diagram', 'association', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
         const c1x = info.x2; // 三角形顶点坐标
         const c1y = info.y2;
@@ -181,12 +175,10 @@ registerLine('class-diagram', 'aggregation', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
         const c1x = info.x2; // 三角形顶点坐标
         const c1y = info.y2;
@@ -230,12 +222,10 @@ registerLine('class-diagram', 'composition', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
         const c1x = info.x2; // 三角形顶点坐标
         const c1y = info.y2;
@@ -280,12 +270,10 @@ registerLine('class-diagram', 'dependency', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
         const c1x = info.x2; // 三角形顶点坐标
         const c1y = info.y2;

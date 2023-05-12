@@ -62,14 +62,3 @@ export interface LineInfo {
 
 // 曲线生成规则，允许单向或者全向绘制
 export type PathParamRole = 'up' | 'down' | 'left' | 'right' | 'all';
-
-export interface ParamConnectData {
-    x1: number; // 起始点的 x 坐标
-    y1: number; // 起始点的 y 坐标
-    x2: number; // 终点的 x 坐标
-    y2: number; // 终点的 y 坐标
-    r1: PathParamRole, // 起始点开始的线段的朝向
-    r2: PathParamRole, // 终点开始的线段的朝向
-    d1: 0 | 1; // 当 r1 为全向的时候，起始点优先以横向还是竖向显示
-    d2: 0 | 1; // 当 r2 为全向的时候，终点点优先以横向还是竖向显示
-}

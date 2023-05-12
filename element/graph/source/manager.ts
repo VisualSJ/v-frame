@@ -161,12 +161,10 @@ g[type="straight"] > polygon {
 }
     `,
     updateSVGPath($g, scale, data) {
-        if (!data.line.input.param) {
-            data.shortestInput();
-        }
-        if (!data.line.output.param) {
-            data.shortestOutput();
-        }
+        data.transform(
+            !data.line.input.param ? 'shortest' : 'normal',
+            !data.line.output.param ? 'shortest' : 'normal',
+        );
         const ct1x = (data.x2 - data.x1) / 2;
         const ct1y = (data.y2 - data.y1) / 2
         const angle = getAngle(data.x1, data.y1, data.x2, data.y2);
@@ -206,12 +204,10 @@ g[type="curve"] > path {
 }
     `,
     updateSVGPath($g, scale, data) {
-        if (!data.line.input.param) {
-            data.shortestInput();
-        }
-        if (!data.line.output.param) {
-            data.shortestOutput();
-        }
+        data.transform(
+            !data.line.input.param ? 'shortest' : 'normal',
+            !data.line.output.param ? 'shortest' : 'normal',
+        );
         let cpx1 = 0; // 起始点的控制点上的 x 坐标
         let cpy1 = 0; // 起始点的控制点上的 y 坐标
         let cpx2 = 0; // 终点的控制点上的 x 坐标

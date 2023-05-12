@@ -1,9 +1,17 @@
 'use strict';
 
 import { PathParamRole, LineInfo, NodeInfo } from '../interface';
-import { intersect, getParamElementOffset, generateUUID, queryParamInfo } from './utils';
+
+/**
+ * 连接点计算方式
+ * normal:   默认在元素中心点
+ * snap:     吸附到边框
+ * shortest: 变换到连线与边框的焦点
+ */
+type ParamPointType = 'normal' | 'snap' | 'shortest';
 
 export class ParamConnectData {
+
     // 起始点
     x1: number = 0;
     y1: number = 0;
@@ -39,103 +47,159 @@ export class ParamConnectData {
         this.nodeB = nodeB;
     }
 
-    /**
-     * 将起始点吸附到边框
-     */
-    snapBorderInput() {
-        if (!this.$nodeA || !this.nodeA || !this.nodeB) {
-            return;
+    transform(startType: ParamPointType, endType: ParamPointType) {
+        switch(startType) {
+            case 'snap':
+                snapBorderInput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                break;
+            case 'shortest':
+                shortestInput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                break;
         }
-        let r1 = this.r1;
-        if (r1 === 'all') {
-            const xd = this.x1 - this.x2;
-            const yd = this.y1 - this.y2;
-            const tl = Math.abs(xd / yd);
-            if (tl <= 1) { // up down
-                r1 = yd <= 0 ? 'up' : 'down';
-            } else { // left right
-                r1 = xd <= 0 ? 'right' : 'left';
-            }
-        }
-        const boundA = this.$nodeA.getBoundingClientRect();
-        switch (r1) {
-            case 'right':
-                this.x1 += boundA.width / 2;
+        switch(endType) {
+            case 'snap':
+                snapBorderOutput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
                 break;
-            case 'left':
-                this.x1 -= boundA.width / 2;
-                break;
-            case 'up':
-                this.y1 += boundA.height / 2;
-                break;
-            case 'down':
-                this.y1 -= boundA.height / 2;
+            case 'shortest':
+                shortestOutput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
                 break;
         }
     }
-    /**
-     * 将结束点吸附到边框
-     */
-    snapBorderOutput() {
-        if (!this.$nodeB || !this.nodeA || !this.nodeB) {
-            return;
-        }
-        const boundB = this.$nodeB.getBoundingClientRect();
-        let r2 = this.r2;
-        if (r2 === 'all') {
-            const xd = this.x1 - this.x2;
-            const yd = this.y1 - this.y2;
-            const tl = Math.abs(xd / yd);
-            if (tl <= 1) { // up down
-                r2 = yd <= 0 ? 'up' : 'down';
-            } else { // left right
-                r2 = xd <= 0 ? 'right' : 'left';
-            }
-        }
-        switch (r2) {
-            case 'right':
-                this.x2 -= boundB.width / 2;
-                break;
-            case 'left':
-                this.x2 += boundB.width / 2;
-                break;
-            case 'up':
-                this.y2 -= boundB.height / 2;
-                break;
-            case 'down':
-                this.y2 += boundB.height / 2;
-                break;
-        }
-    }
+}
 
-    /**
-     * 两点连接计算最短连接线上的两个交点
-     */
-    shortestInput() {
-        if (!this.$nodeA || !this.nodeA || !this.nodeB) {
-            return;
+/**
+ * 检测一条线和一个矩形相交的点
+ * 返回他们相交的点坐标，以及该点的朝向 [x, y, d];
+ * @param x1 线段起始点的 x 坐标
+ * @param y1 线段起始点的 y 坐标
+ * @param x2 线段终点的 x 坐标
+ * @param y2 线段终点的 y 坐标
+ * @param x3 矩形的左上角 x 坐标
+ * @param y3 矩形的左上角 y 坐标
+ * @param w 矩形的宽度
+ * @param h 矩形的高度
+ * @returns [number, number, 0 | 1];
+ */
+function intersect(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, w: number, h: number): [number, number, 0 | 1] {
+    // 计算矩形的四个顶点坐标
+    const x4 = x3 + w;
+    const y4 = y3 + h;
+
+    const xa = (y4 - y1) / (y2 - y1) * (x2 - x1) + x1;
+    if (xa > x4 || xa < x3) {
+        const ya = (x4 - x1) / (x2 - x1) * (y2 - y1) + y1;
+        if (x2 > x1) {
+            return [x4, ya, 0];
+        } else {
+            return [x3, y4 - ya + y3, 0];
         }
-        const boundA = this.$nodeA!.getBoundingClientRect();
-        boundA.width /= this.scale;
-        boundA.height /= this.scale;
-        const pa = intersect(this.x1, this.y1, this.x2, this.y2, this.nodeA.position.x - boundA.width / 2, this.nodeA.position.y - boundA.height / 2, boundA.width, boundA.height)!;
-        this.x1 = pa[0];
-        this.y1 = pa[1];
-        this.d1 = pa[2];
-    }
-    /**
-     * 两点连接计算最短连接线上的两个交点
-     */
-    shortestOutput() {
-        if (!this.$nodeB || !this.nodeA || !this.nodeB) {
-            return;
+    } else {
+        if (y2 > y1) {
+            return [xa, y4, 1];
+        } else {
+            return [x4 - xa + x3, y3, 1];
         }
-        const boundB = this.$nodeB!.getBoundingClientRect();
-        boundB.width /= this.scale;
-        boundB.height /= this.scale;
-        const pb = intersect(this.x2, this.y2, this.x1, this.y1, this.nodeB.position.x - boundB.width / 2, this.nodeB.position.y - boundB.height / 2, boundB.width, boundB.height)!;
-        this.x2 = pb[0];
-        this.y2 = pb[1];
-        this.d2 = pb[2];
     }
+}
+
+/**
+ * 将起始点吸附到边框
+ */
+function snapBorderInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+    if (!$nodeA || !nodeA || !nodeB) {
+        return;
+    }
+    let r1 = data.r1;
+    if (r1 === 'all') {
+        const xd = data.x1 - data.x2;
+        const yd = data.y1 - data.y2;
+        const tl = Math.abs(xd / yd);
+        if (tl <= 1) { // up down
+            r1 = yd <= 0 ? 'up' : 'down';
+        } else { // left right
+            r1 = xd <= 0 ? 'right' : 'left';
+        }
+    }
+    const boundA = $nodeA.getBoundingClientRect();
+    switch (r1) {
+        case 'right':
+            data.x1 += boundA.width / 2;
+            break;
+        case 'left':
+            data.x1 -= boundA.width / 2;
+            break;
+        case 'up':
+            data.y1 += boundA.height / 2;
+            break;
+        case 'down':
+            data.y1 -= boundA.height / 2;
+            break;
+    }
+}
+
+/**
+ * 将结束点吸附到边框
+ */
+function snapBorderOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+    if (!$nodeB || !nodeA || !nodeB) {
+        return;
+    }
+    const boundB = $nodeB.getBoundingClientRect();
+    let r2 = data.r2;
+    if (r2 === 'all') {
+        const xd = data.x1 - data.x2;
+        const yd = data.y1 - data.y2;
+        const tl = Math.abs(xd / yd);
+        if (tl <= 1) { // up down
+            r2 = yd <= 0 ? 'up' : 'down';
+        } else { // left right
+            r2 = xd <= 0 ? 'right' : 'left';
+        }
+    }
+    switch (r2) {
+        case 'right':
+            data.x2 -= boundB.width / 2;
+            break;
+        case 'left':
+            data.x2 += boundB.width / 2;
+            break;
+        case 'up':
+            data.y2 -= boundB.height / 2;
+            break;
+        case 'down':
+            data.y2 += boundB.height / 2;
+            break;
+    }
+}
+
+/**
+ * 两点连接计算最短连接线上的两个交点
+ */
+function shortestInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+    if (!$nodeA || !nodeA || !nodeB) {
+        return;
+    }
+    const boundA = $nodeA!.getBoundingClientRect();
+    boundA.width /= (scale || 1);
+    boundA.height /= (scale || 1);
+    const pa = intersect(data.x1, data.y1, data.x2, data.y2, nodeA.position.x - boundA.width / 2, nodeA.position.y - boundA.height / 2, boundA.width, boundA.height)!;
+    data.x1 = pa[0];
+    data.y1 = pa[1];
+    data.d1 = pa[2];
+}
+
+/**
+ * 两点连接计算最短连接线上的两个交点
+ */
+function shortestOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+    if (!$nodeB || !nodeA || !nodeB) {
+        return;
+    }
+    const boundB = $nodeB!.getBoundingClientRect();
+    boundB.width /= (scale || 1);
+    boundB.height /= (scale || 1);
+    const pb = intersect(data.x2, data.y2, data.x1, data.y1, nodeB.position.x - boundB.width / 2, nodeB.position.y - boundB.height / 2, boundB.width, boundB.height)!;
+    data.x2 = pb[0];
+    data.y2 = pb[1];
+    data.d2 = pb[2];
 }

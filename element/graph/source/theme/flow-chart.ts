@@ -36,12 +36,10 @@ registerLine('flow-chart', 'curve', {
         }
     `,
     updateSVGPath($g, scale, info) {
-        if (!info.line.input.param) {
-            info.shortestInput();
-        }
-        if (!info.line.output.param) {
-            info.shortestOutput();
-        }
+        info.transform(
+            !info.line.input.param ? 'shortest' : 'normal',
+            !info.line.output.param ? 'shortest' : 'normal',
+        );
         const angle = getAngle(info.x1, info.y1, info.x2, info.y2);
 
         const c1x = info.x2; // 三角形顶点坐标
