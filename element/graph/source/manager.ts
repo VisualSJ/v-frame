@@ -22,6 +22,8 @@ interface LineTypeOption {
         $path: SVGGElement,
         scale: number,
         data: ParamConnectData,
+        line: LineInfo,
+        lines: { [key: string]: LineInfo | undefined },
     ): void;
 }
 
@@ -150,17 +152,57 @@ registerLine('*', 'straight', {
 <path d=""></path>
 <polygon points=""></polygon>
     `,
+// <text dominant-baseline="middle" text-anchor="middle">4</text>
     style: /*css*/`
 g[type="straight"] > path, g[type="straight"] > polygon {
     fill: none;
     stroke: #fafafa;
     stroke-width: 2px;
+    transition: stroke 0.3s, fill 0.3s;
+}
+g[type="straight"]:hover > path, g[type="straight"]:hover > polygon, g[type="straight"]:hover > text {
+    stroke: #666;
+}
+g[type="straight"][selected] > path, g[type="straight"][selected] > polygon, g[type="straight"][selected] > text {
+    stroke: #666;
 }
 g[type="straight"] > polygon {
     fill: #fafafa;
 }
+g[type="straight"]:hover > polygon {
+    fill: #666;
+}
+g[type="straight"][selected] > polygon {
+    fill: #666;
+}
+g[type="straight"] > text {
+    fill: #fafafa;
+}
     `,
     updateSVGPath($g, scale, data) {
+        if (data.nodeA === data.nodeB) {
+            const rect = data.getNodeABoundingClientRect();
+            const position = {
+                x: data.x1 + rect.width / scale / 2,
+                y: data.y1 - rect.height / scale / 2,
+            }
+            const $path = $g.querySelector(`path`)!;
+            $path.setAttribute('d', `M${position.x - 20},${position.y} A20,20 1 1 1 ${position.x},${position.y + 20}`);
+            const c1x = position.x - 4; // 三角形顶点坐标
+            const c1y = position.y - 20;
+            const c2x = c1x + 6;
+            const c2y = c1y - 7;
+            const c3x = c1x - 6;
+            const c3y = c1y - 7;
+            const $polygon = $g.querySelector(`polygon`)!;
+            $polygon.setAttribute('points', `${c1x},${c1y} ${c2x},${c2y} ${c3x},${c3y}`);
+            $polygon.setAttribute('style', `transform-origin: ${c1x}px ${c1y}px; transform: rotate(${90}deg)`);
+
+            // const $text = $g.querySelector(`text`)!;
+            // $text.setAttribute('x', String(c1x - 4));
+            // $text.setAttribute('y', String(c1y - 12));
+            return;
+        }
         data.transform(
             !data.line.input.param ? 'shortest' : 'normal',
             !data.line.output.param ? 'shortest' : 'normal',
@@ -180,8 +222,19 @@ g[type="straight"] > polygon {
         const $polygon = $g.querySelector(`polygon`)!;
         $polygon.setAttribute('points', `${c1x},${c1y} ${c2x},${c2y} ${c3x},${c3y}`);
         $polygon.setAttribute('style', `transform-origin: ${c1x}px ${c1y}px; transform: rotate(${angle - 90}deg)`);
+
+        // const oAngle = -Math.PI/(180/angle);
+
+        // const xa = -4 * Math.cos(oAngle) - -16 * Math.sin(oAngle);
+        // const ya = -4 * Math.sin(oAngle) - -16 * Math.cos(oAngle);
+
+        // const $text = $g.querySelector(`text`)!;
+        // $text.setAttribute('x', String(c1x + xa));
+        // $text.setAttribute('y', String(c1y + ya));
+        // $text.innerHTML = '1';
     },
 });
+
 registerLine('*', 'curve', {
     template: /*svg*/`
 <path d=""></path>

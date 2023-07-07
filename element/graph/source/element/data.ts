@@ -35,16 +35,25 @@ export class ParamConnectData {
     private scale: number = 1;
     private $nodeA?: HTMLElement;
     private $nodeB?: HTMLElement;
-    private nodeA?: NodeInfo;
-    private nodeB?: NodeInfo;
+    nodeA?: NodeInfo;
+    nodeB?: NodeInfo;
 
     constructor(line: LineInfo, scale: number, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo) {
         this.line = line;
+        this.scale = scale;
 
         this.$nodeA = $nodeA;
         this.$nodeB = $nodeB;
         this.nodeA = nodeA;
         this.nodeB = nodeB;
+    }
+
+    getNodeABoundingClientRect() {
+        return this.$nodeA!.getBoundingClientRect();
+    }
+
+    getNodeBBoundingClientRect() {
+        return this.$nodeB!.getBoundingClientRect();
     }
 
     transform(startType: ParamPointType, endType: ParamPointType) {
@@ -53,7 +62,9 @@ export class ParamConnectData {
                 snapBorderInput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
                 break;
             case 'shortest':
-                shortestInput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                if (this.$nodeA !== this.$nodeB) {
+                    shortestInput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                }
                 break;
         }
         switch(endType) {
@@ -61,7 +72,9 @@ export class ParamConnectData {
                 snapBorderOutput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
                 break;
             case 'shortest':
-                shortestOutput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                if (this.$nodeA !== this.$nodeB) {
+                    shortestOutput(this, this.$nodeA, this.$nodeB, this.nodeA, this.nodeB, this.scale);
+                }
                 break;
         }
     }
@@ -175,13 +188,13 @@ function snapBorderOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?:
 /**
  * 两点连接计算最短连接线上的两个交点
  */
-function shortestInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+function shortestInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale: number = 1) {
     if (!$nodeA || !nodeA || !nodeB) {
         return;
     }
     const boundA = $nodeA!.getBoundingClientRect();
-    boundA.width /= (scale || 1);
-    boundA.height /= (scale || 1);
+    boundA.width /= scale;
+    boundA.height /= scale;
     const pa = intersect(data.x1, data.y1, data.x2, data.y2, nodeA.position.x - boundA.width / 2, nodeA.position.y - boundA.height / 2, boundA.width, boundA.height)!;
     data.x1 = pa[0];
     data.y1 = pa[1];
@@ -191,13 +204,13 @@ function shortestInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HT
 /**
  * 两点连接计算最短连接线上的两个交点
  */
-function shortestOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale?: number) {
+function shortestOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HTMLElement, nodeA?: NodeInfo, nodeB?: NodeInfo, scale: number = 1) {
     if (!$nodeB || !nodeA || !nodeB) {
         return;
     }
     const boundB = $nodeB!.getBoundingClientRect();
-    boundB.width /= (scale || 1);
-    boundB.height /= (scale || 1);
+    boundB.width /= scale;
+    boundB.height /= scale;
     const pb = intersect(data.x2, data.y2, data.x1, data.y1, nodeB.position.x - boundB.width / 2, nodeB.position.y - boundB.height / 2, boundB.width, boundB.height)!;
     data.x2 = pb[0];
     data.y2 = pb[1];

@@ -8,7 +8,9 @@ import { NodeInfo, LineInfo, GraphOption } from '../interface';
 import { getParamElementOffset, generateUUID, queryParamInfo } from './utils';
 import { queryLine, queryGraphFliter, queryGraphOption } from '../manager';
 
-const nodeToElem: WeakMap<NodeInfo, HTMLElement> = new WeakMap();
+import type { GraphNodeElement } from './graph-node';
+
+const nodeToElem: WeakMap<NodeInfo, GraphNodeElement> = new WeakMap();
 
 const graphUtils = {
 
@@ -130,7 +132,7 @@ const graphUtils = {
             if (!node || refreshFlag.has(uuid)) {
                 continue;
             }
-            const $node = document.createElement('v-graph-node') as BaseElement;
+            const $node = document.createElement('v-graph-node') as GraphNodeElement;
 
             // 关联数据
             nodeToElem.set(node, $node);
@@ -193,7 +195,7 @@ const graphUtils = {
         }
 
         const lineAdapter = queryLine(graphType, line.type);
-        lineAdapter.updateSVGPath($line, 1, d);
+        lineAdapter.updateSVGPath($line, scale, d, line, lines);
     },
 
     renderLines($elem: GraphElement, offset: {x: number, y: number }, scale: number) {
@@ -231,9 +233,22 @@ const graphUtils = {
             $line.setAttribute('line-uuid', uuid);
             const lineAdapter = queryLine(graphType, line.type);
 
+            $line.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const custom = new CustomEvent('select-line', {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: {},
+                });
+                $line.dispatchEvent(custom);
+            });
+
             const $style = $elem.querySelector(`style[line-type="${line.type}"]`);
             if (!$style) {
                 const $style = document.createElement('style');
+                $style.setAttribute('line-type', line.type);
                 $style.innerHTML = lineAdapter.style;
                 $elem.shadowRoot.appendChild($style);
             }
@@ -252,43 +267,137 @@ const graphUtils = {
             event.preventDefault();
         });
 
-        // 拖拽移动
-        $elem.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
+        const selectLines: Set<SVGGElement> = new Set;
+        function selectLine($g: SVGGElement) {
+            $g.setAttribute('selected', '');
+            selectLines.add($g);
+        }
+        function unselectLine($g: SVGGElement) {
+            if ($g.hasAttribute('selected')) {
+                $g.removeAttribute('selected');
+                selectLines.delete($g);
+            }
+        }
+        $elem.shadowRoot.addEventListener('select-line', (event) => {
+            if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+                selectLines.forEach(($g) => {
+                    unselectLine($g);
+                });
+            }
+            selectLine(event.target as SVGGElement);
+        });
 
-            const offset = $elem.data.getProperty('offset');
-            if (event.button !== 2) {
+        // 处理选中状态，交给 node 自己控制
+        $elem.shadowRoot.addEventListener('click', (event) => {
+            const $node = event.target as GraphNodeElement;
+            if ($node.tagName !== 'V-GRAPH-NODE') {
                 return;
             }
-            const start = {
-                x: offset.x,
-                y: offset.y,
-            };
-            const point = {
-                x: event.pageX,
-                y: event.pageY,
-            };
 
-            const mousemove = (event: MouseEvent) => {
-                start.x = event.pageX - point.x;
-                start.y = event.pageY - point.y;
-                const reOffset = {
-                    x: offset.x + start.x,
-                    y: offset.y + start.y,
-                };
-                $elem.data.setProperty('offset', reOffset);
+            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+
+            if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+                for (let id in nodes) {
+                    const node = nodes[id]!;
+                    const $node = nodeToElem.get(node);
+                    if ($node) {
+                        $node.setProperty('selected', false);
+                    }
+                }
             }
-            const mouseup = () => {
-                offset.x = offset.x + start.x;
-                offset.y = offset.y + start.y;
-                start.x = 0;
-                start.y = 0;
-                document.removeEventListener('mousemove', mousemove);
-                document.removeEventListener('moveup', mouseup);
+
+            // const custom = new CustomEvent('select-node', {
+            //     detail: {
+            //         node: $node,
+            //     },
+            //     bubbles: false,
+            // });
+            // $elem.dispatchEvent(custom);
+            const selected = $node.getProperty('selected');
+            $node.setProperty('selected', !selected);
+        });
+
+        
+        $elem.addEventListener('mousedown', (event) => {
+
+            switch (event.button) {
+                // 框选
+                case 0: {
+                    event.stopPropagation();
+                    event.preventDefault();
+
+                    const offset = $elem.data.getProperty('offset');
+                    const start = {
+                        x: offset.x,
+                        y: offset.y,
+                    };
+                    const point = {
+                        x: event.pageX,
+                        y: event.pageY,
+                    };
+
+                    const mousemove = (event: MouseEvent) => {
+                        start.x = event.pageX - point.x;
+                        start.y = event.pageY - point.y;
+                        const reOffset = {
+                            x: offset.x + start.x,
+                            y: offset.y + start.y,
+                        };
+                        $elem.data.setProperty('offset', reOffset);
+                    }
+                    const mouseup = () => {
+                        offset.x = offset.x + start.x;
+                        offset.y = offset.y + start.y;
+                        start.x = 0;
+                        start.y = 0;
+                        document.removeEventListener('mousemove', mousemove);
+                        document.removeEventListener('moveup', mouseup);
+                    }
+                    document.addEventListener('mousemove', mousemove);
+                    document.addEventListener('mouseup', mouseup);
+                    break;
+                }
+
+                // 拖拽移动整个画布
+                case 1:
+                case 2: {
+                    event.stopPropagation();
+                    event.preventDefault();
+    
+                    const offset = $elem.data.getProperty('offset');
+                    const start = {
+                        x: offset.x,
+                        y: offset.y,
+                    };
+                    const point = {
+                        x: event.pageX,
+                        y: event.pageY,
+                    };
+    
+                    const mousemove = (event: MouseEvent) => {
+                        start.x = event.pageX - point.x;
+                        start.y = event.pageY - point.y;
+                        const reOffset = {
+                            x: offset.x + start.x,
+                            y: offset.y + start.y,
+                        };
+                        $elem.data.setProperty('offset', reOffset);
+                    }
+                    const mouseup = () => {
+                        offset.x = offset.x + start.x;
+                        offset.y = offset.y + start.y;
+                        start.x = 0;
+                        start.y = 0;
+                        document.removeEventListener('mousemove', mousemove);
+                        document.removeEventListener('moveup', mouseup);
+                    }
+                    document.addEventListener('mousemove', mousemove);
+                    document.addEventListener('mouseup', mouseup);
+                    break;
+                }
+
             }
-            document.addEventListener('mousemove', mousemove);
-            document.addEventListener('mouseup', mouseup);
+            
         });
 
         // 鼠标滚轮
@@ -344,9 +453,7 @@ ${style.line}
     transform: translate(var(--offset-x), var(--offset-y)) scale(var(--scale));
 }
 #nodes {
-    width: 100%;
-    height: 100%;
-    position: absolute;
+
 }
 #lines {
     width: 100%;
@@ -364,7 +471,7 @@ v-graph-node {
     transform-origin: center center;
     transform: translateX(-50%) translateX(var(--offset-x)) translateY(-50%) translateY(var(--offset-y));
 }
-v-graph-node[moveing] {
+v-graph-node[moving] {
     z-index: 999;
 }
         `;
@@ -498,6 +605,7 @@ v-graph-node[moveing] {
      */
     startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output') {
         const lines = this.data.getProperty('lines') as { [key: string]: LineInfo | undefined, };
+        const nodes = this.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         let line = this.getLine('connect-param-line');
         // 如果已经有线段了，说明是连接第二个点
         if (line) {
@@ -517,26 +625,41 @@ v-graph-node[moveing] {
             return;
         }
         line = this.generateLine(lineType);
-        const fake = this.generateNode();;
+        const fake = this.generateNode();
+        const calibration = this.data.getProperty('calibration');
+        const scale = this.data.getProperty('scale');
+        const offset = this.data.getProperty('offset');
         if (paramDirection === 'input') {
             line.output.node = nodeUUID;
             line.output.param = paramName;
+            const nodeE = nodes[line.output.node];
+            if (nodeE) {
+                fake.position.x = nodeE.position.x + 1;
+                fake.position.y = nodeE.position.y + 1;
+            }
             line.input.__fake = fake
         } else if (paramDirection === 'output') {
             line.input.node = nodeUUID;
             line.input.param = paramName;
+            const nodeE = nodes[line.input.node];
+            if (nodeE) {
+                fake.position.x = nodeE.position.x + 1;
+                fake.position.y = nodeE.position.y + 1;
+            }
             line.output.__fake = fake;
         } else {
             line.input.node = nodeUUID;
+            const nodeE = nodes[line.input.node];
+            if (nodeE) {
+                fake.position.x = nodeE.position.x + 1;
+                fake.position.y = nodeE.position.y + 1;
+            }
             line.output.__fake = fake;
         }
         // 绕过线段检查
         lines['connect-param-line'] = line;
         this.data.emitProperty('lines', lines, lines);
         this.addEventListener('mousemove', (event) => {
-            const calibration = this.data.getProperty('calibration');
-            const scale = this.data.getProperty('scale');
-            const offset = this.data.getProperty('offset');
             fake.position.x =  (event.clientX - calibration.x - offset.x) / scale;
             fake.position.y =  (event.clientY - calibration.y - offset.y) / scale;
             this.data.emitProperty('lines', lines, lines);

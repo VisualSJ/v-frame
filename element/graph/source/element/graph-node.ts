@@ -10,6 +10,8 @@ type GraphNodeElementData = {
     graphType: string;
     // 类型
     type: string;
+    // 是否选中
+    selected: boolean;
     // 附加描述信息
     details: { [key: string]: any };
     // 节点所在的坐标
@@ -33,6 +35,7 @@ export class GraphNodeElement extends BaseElement {
             scale: 1,
             graphType: '',
             type: '',
+            selected: false,
             details: {},
             position: { x: 0, y: 0 },
             moveStartPoint: { x: 0, y: 0, pageX: 0, pageY: 0, },
@@ -45,7 +48,7 @@ export class GraphNodeElement extends BaseElement {
      * 直到执行 stopMove 或者点击一下页面
      */
     startMove() {
-        this.setAttribute('moveing', '');
+        this.setAttribute('moving', '');
         let t = false;
         const scale = this.data.getProperty('scale');
         const moveStartPoint = this.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
@@ -72,22 +75,24 @@ export class GraphNodeElement extends BaseElement {
             this.data.setProperty('position', reOffset);
         }
         const mouseup = (event: MouseEvent) => {
-            const offset = {
-                x: event.pageX - moveStartPoint.pageX,
-                y: event.pageY - moveStartPoint.pageY,
-            };
-            const reOffset = {
-                x: (moveStartPoint.x + offset.x) / scale,
-                y: (moveStartPoint.y + offset.y) / scale,
-            };
-            this.data.setProperty('position', reOffset);
+            if (t) {
+                const offset = {
+                    x: event.pageX - moveStartPoint.pageX,
+                    y: event.pageY - moveStartPoint.pageY,
+                };
+                const reOffset = {
+                    x: (moveStartPoint.x + offset.x) / scale,
+                    y: (moveStartPoint.y + offset.y) / scale,
+                };
+                this.data.setProperty('position', reOffset);
+            }
             stopmove();
         }
         const stopmove = () => {
             document.removeEventListener('mousemove', mousemove);
             document.removeEventListener('mouseup', mouseup);
             document.removeEventListener('stop-move-graph-node', stopmove);
-            this.removeAttribute('moveing');
+            this.removeAttribute('moving');
         };
         document.addEventListener('mousemove', mousemove);
         document.addEventListener('mouseup', mouseup);
@@ -202,6 +207,14 @@ export class GraphNodeElement extends BaseElement {
 
         this.data.addPropertyListener('position', (position, legacy) => {
             this.setAttribute('style', `--offset-x: ${position.x}px; --offset-y: ${position.y}px;`);
+        });
+
+        this.data.addPropertyListener('selected', (selected, legacy) => {
+            if (selected) {
+                this.setAttribute('selected', '');
+            } else {
+                this.removeAttribute('selected');
+            }
         });
     }
 }
