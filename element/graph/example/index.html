@@ -55,7 +55,7 @@
           color: #ccc;
           transition: box-shadow 0.2s, border 0.2s;
         }
-        :host(:hover) {
+        :host(:hover), :host([selected]) {
           border-color: white;
           box-shadow: 0px 0px 14px 2px white;
         }
@@ -143,7 +143,7 @@
           display: flex;
           flex-direction: row;
         }
-        :host(:hover) {
+        :host(:hover), :host([selected]) {
           border-color: white;
           box-shadow: 0px 0px 14px 2px white;
         }
@@ -233,7 +233,7 @@
             color: #ccc;
             transition: box-shadow 0.2s, border 0.2s;
           }
-          :host(:hover) {
+          :host(:hover), :host([selected]) {
             border-color: white;
             box-shadow: 0px 0px 14px 2px white;
           }
@@ -251,12 +251,12 @@
           this.bindDefaultMoveEvent();
           this.querySelector('.label').innerHTML = details.label;
           this.addEventListener('mousedown', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
             if (event.button !== 2) {
               return;
             }
-            this.methods.startConnect('straight');
+            event.stopPropagation();
+            event.preventDefault();
+            this.startConnect('straight');
           });
         },
 
