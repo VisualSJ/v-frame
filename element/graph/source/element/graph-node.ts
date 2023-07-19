@@ -117,7 +117,7 @@ export class GraphNodeElement extends BaseElement {
      * @param paramDirection 
      * @returns 
      */
-    startConnect(type: string, param?: string, paramDirection?: 'input' | 'output') {
+    startConnect(type: string, param?: string, paramDirection?: 'input' | 'output', details?: { [key: string]: any }) {
         const uuid = this.data.getAttribute('node-uuid');
         if (!uuid) {
             return;
@@ -129,8 +129,9 @@ export class GraphNodeElement extends BaseElement {
             detail: {
                 lineType: type,
                 node: uuid,
-                param: param,
-                paramDirection: paramDirection,
+                param,
+                paramDirection,
+                details,
             },
         });
         this.dispatchEvent(custom);

@@ -18,6 +18,9 @@ export function getParamElementOffset($node: HTMLElement, selector: string, scal
     if (!$param) {
         return null;
     }
+    if ($param.hasAttribute('hidden')) {
+        return null;
+    }
     const nodeBBound = $node.getBoundingClientRect();
     const paramBBound = $param.getBoundingClientRect();
     return {

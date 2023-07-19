@@ -267,22 +267,29 @@ const graphUtils = {
             event.preventDefault();
         });
 
-        const selectLines: Set<SVGGElement> = new Set;
         function selectLine($g: SVGGElement) {
             $g.setAttribute('selected', '');
-            selectLines.add($g);
+            $elem.__selectLines__.add($g);
         }
         function unselectLine($g: SVGGElement) {
             if ($g.hasAttribute('selected')) {
                 $g.removeAttribute('selected');
-                selectLines.delete($g);
+                $elem.__selectLines__.delete($g);
             }
         }
         $elem.shadowRoot.addEventListener('select-line', (event) => {
+            // 取消 node 选中状态
+            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+            for (let id in nodes) {
+                const node = nodes[id]!;
+                const $node = nodeToElem.get(node);
+                if ($node) {
+                    $node.setProperty('selected', false);
+                }
+            }
+
             if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
-                selectLines.forEach(($g) => {
-                    unselectLine($g);
-                });
+                $elem.clearAllSelected();
             }
             selectLine(event.target as SVGGElement);
         });
@@ -296,6 +303,9 @@ const graphUtils = {
 
             const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
 
+            // 取消 line 选中状态
+            $elem.clearAllSelected();
+
             if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
                 for (let id in nodes) {
                     const node = nodes[id]!;
@@ -305,53 +315,59 @@ const graphUtils = {
                     }
                 }
             }
-
-            // const custom = new CustomEvent('select-node', {
-            //     detail: {
-            //         node: $node,
-            //     },
-            //     bubbles: false,
-            // });
-            // $elem.dispatchEvent(custom);
             const selected = $node.getProperty('selected');
             $node.setProperty('selected', !selected);
         });
 
-        
         $elem.addEventListener('mousedown', (event) => {
-
+            if ($elem.hasConnect()) {
+                $elem.stopConnect();
+                return;
+            }
             switch (event.button) {
                 // 框选
                 case 0: {
-                    event.stopPropagation();
-                    event.preventDefault();
+                    // event.stopPropagation();
+                    // event.preventDefault();
 
+                    const selectBox = $elem.data.getProperty('selectBox');
                     const offset = $elem.data.getProperty('offset');
-                    const start = {
-                        x: offset.x,
-                        y: offset.y,
-                    };
-                    const point = {
+                    const startPoint = {
                         x: event.pageX,
                         y: event.pageY,
                     };
+                    selectBox.x = event.offsetX;
+                    selectBox.y = event.offsetY;
 
                     const mousemove = (event: MouseEvent) => {
-                        start.x = event.pageX - point.x;
-                        start.y = event.pageY - point.y;
-                        const reOffset = {
-                            x: offset.x + start.x,
-                            y: offset.y + start.y,
+                        const scale = $elem.data.getProperty('scale');
+                        const point = {
+                            x: event.pageX - startPoint.x,
+                            y: event.pageY - startPoint.y,
+                        }
+
+                        const reSelectBox = {
+                            x: selectBox.x,
+                            y: selectBox.y,
+                            w: point.x,
+                            h: point.y,
                         };
-                        $elem.data.setProperty('offset', reOffset);
+                        if (reSelectBox.w < 0) {
+                            reSelectBox.x += reSelectBox.w;
+                            reSelectBox.w = -reSelectBox.w;
+                        }
+                        if (reSelectBox.h < 0) {
+                            reSelectBox.y += reSelectBox.h;
+                            reSelectBox.h = -reSelectBox.h;
+                        }
+
+                        $elem.data.setProperty('selectBox', reSelectBox);
                     }
                     const mouseup = () => {
-                        offset.x = offset.x + start.x;
-                        offset.y = offset.y + start.y;
-                        start.x = 0;
-                        start.y = 0;
                         document.removeEventListener('mousemove', mousemove);
-                        document.removeEventListener('moveup', mouseup);
+                        document.removeEventListener('mouseup', mouseup);
+                        const reSelectBox = { x: 0, y: 0, w: 0, h: 0 };
+                        $elem.data.setProperty('selectBox', reSelectBox);
                     }
                     document.addEventListener('mousemove', mousemove);
                     document.addEventListener('mouseup', mouseup);
@@ -419,7 +435,9 @@ export class GraphElement extends BaseElement {
 <div id="dom-box">
     <svg id="lines"></svg>
     <div id="nodes"></div>
-</div>`;
+</div>
+<div class="select-box"></div>
+`;
     } 
 
     get HTMLStyle() {
@@ -474,12 +492,23 @@ v-graph-node {
 v-graph-node[moving] {
     z-index: 999;
 }
+
+.select-box {
+    position: absolute;
+    background: white;
+    opacity: 0.3;
+    width: 0;
+    height: 0;
+    top: 0;
+    left: 0;
+}
         `;
     }
 
     get defaultData(): {
         offset: { x: number, y: number, };
         calibration: { x: number, y: number, };
+        selectBox: { x: number, y: number, w: number, h: number, };
         scale: number;
         nodes: { [key: string]: NodeInfo | undefined, };
         lines: { [key: string]: LineInfo | undefined, };
@@ -487,15 +516,19 @@ v-graph-node[moving] {
         return {
             // 中心偏移量，记录的是节点坐标系内的偏移量
             offset: { x: 0, y: 0, },
-            // 记录节点坐标系与 html 坐标系的偏差
+            // 记录节点坐标系与 HTML 坐标系的偏差
             calibration: { x: 0, y: 0, },
+            // 框选区域，记录的坐标是 HTML 坐标
+            selectBox: { x: 0, y: 0, w: 0, h: 0, },
     
             // 缩放比例
-            scale: 0,
+            scale: 1,
             nodes: {},
             lines: {},
         };
     }
+
+    __selectLines__: Set<SVGGElement> = new Set;
 
     /**
      * 生成一个 node 数据
@@ -513,10 +546,10 @@ v-graph-node[moving] {
      * 生成一个 line 数据
      * @param type
      */
-    generateLine(type?: string): LineInfo {
+    generateLine(type?: string, details?: { [key: string]: any }): LineInfo {
         return {
             type: type || 'straight',
-            details: {},
+            details: details || {},
             input: {
                 node: '',
             },
@@ -595,6 +628,26 @@ v-graph-node[moving] {
         this.data.emitProperty('lines', lines, lines);
     }
 
+    clearAllSelected() {
+        this.__selectLines__.forEach(($g) => {
+            if ($g.hasAttribute('selected')) {
+                $g.removeAttribute('selected');
+                this.__selectLines__.delete($g);
+            }
+        });
+
+        // const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+        // for (let id in nodes) {
+        //     const node = nodes[id]!;
+        //     const $node = nodeToElem.get(node);
+        //     if ($node) {
+        //         $node.setProperty('selected', false);
+        //     }
+        // }
+    }
+
+    __connect__event__: any;
+
     /**
      * 开始连接节点/参数
      * @param lineType 
@@ -603,7 +656,7 @@ v-graph-node[moving] {
      * @param paramDirection 
      * @returns 
      */
-    startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output') {
+    startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output', details?: { [key: string]: any }) {
         const lines = this.data.getProperty('lines') as { [key: string]: LineInfo | undefined, };
         const nodes = this.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         let line = this.getLine('connect-param-line');
@@ -627,7 +680,6 @@ v-graph-node[moving] {
         line = this.generateLine(lineType);
         const fake = this.generateNode();
         const calibration = this.data.getProperty('calibration');
-        const scale = this.data.getProperty('scale');
         const offset = this.data.getProperty('offset');
         if (paramDirection === 'input') {
             line.output.node = nodeUUID;
@@ -659,11 +711,13 @@ v-graph-node[moving] {
         // 绕过线段检查
         lines['connect-param-line'] = line;
         this.data.emitProperty('lines', lines, lines);
-        this.addEventListener('mousemove', (event) => {
-            fake.position.x =  (event.clientX - calibration.x - offset.x) / scale;
-            fake.position.y =  (event.clientY - calibration.y - offset.y) / scale;
+        this.__connect__event__ = (event: MouseEvent) => {
+            const scale = this.data.getProperty('scale');
+            fake.position.x =  (event.offsetX - calibration.x - offset.x) / scale;
+            fake.position.y =  (event.offsetY - calibration.y - offset.y) / scale;
             this.data.emitProperty('lines', lines, lines);
-        });
+        };
+        this.addEventListener('mousemove', this.__connect__event__);
     }
 
     /**
@@ -682,6 +736,7 @@ v-graph-node[moving] {
         const lines = this.data.getProperty('lines');
         delete lines['connect-param-line'];
         this.data.emitProperty('lines', lines, lines);
+        this.removeEventListener('mousemove', this.__connect__event__);
     }
 
     onInit() {
@@ -704,12 +759,14 @@ v-graph-node[moving] {
         }
 
         const $domBox = this.querySelector('#dom-box')!;
-        // 监听数据变化
+        // 监听 scale 变化
         this.data.addPropertyListener('scale', (scale) => {
             const offset = this.data.getProperty('offset');
             $domBox.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
             refresh();
         });
+
+        // 监听 offset 变化
         let lock = false;
         this.data.addPropertyListener('offset', (offset) => {
             if (lock) {
@@ -726,36 +783,78 @@ v-graph-node[moving] {
             });
 
         });
+
+        // 监听 option 变化
         this.data.addPropertyListener('option', (option) => {
             const box = this.getBoundingClientRect();
             const offset = this.data.getProperty('offset');
             const scale = this.data.getProperty('scale');
             graphUtils.renderMesh(this, ctx, box, offset, scale, option);
         });
+
+        // 监听 nodes 变化
         this.data.addPropertyListener('nodes', (nodes) => {
             const offset = this.data.getProperty('offset');
             const scale = this.data.getProperty('scale');
             graphUtils.renderNodes(this, offset, scale);
         });
+
+        // 监听 lines 变化
         this.data.addPropertyListener('lines', (lines) => {
             const offset = this.data.getProperty('offset');
             const scale = this.data.getProperty('scale');
             graphUtils.renderLines(this, offset, scale);
         });
 
+        // 监听 selectBox 变化，框选检测
+        const $selectBox = this.querySelector('.select-box')!;
+        this.data.addPropertyListener('selectBox', (selectBox) => {
+            // 设置遮罩
+            $selectBox.setAttribute('style', `top: ${selectBox.y}px; left: ${selectBox.x}px; width: ${selectBox.w}px; height: ${selectBox.h}px;`);
+
+            const nodes = this.data.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+
+            if (
+                selectBox.x === 0 &&
+                selectBox.y === 0 &&
+                selectBox.w === 0 &&
+                selectBox.h === 0
+            ) {
+                return;
+            }
+
+            this.clearAllSelected();
+
+            const selectBoxBoundingClientRect = $selectBox.getBoundingClientRect();
+            for (let key in nodes) {
+                const node = nodes[key]!;
+                const $node = nodeToElem.get(node)!;
+                const nodeBoundingClientRect = $node.getBoundingClientRect();
+
+                if (
+                    selectBoxBoundingClientRect.left < nodeBoundingClientRect.right &&
+                    selectBoxBoundingClientRect.right > nodeBoundingClientRect.left &&
+                    selectBoxBoundingClientRect.top < nodeBoundingClientRect.bottom &&
+                    selectBoxBoundingClientRect.bottom > nodeBoundingClientRect.top
+                ) {
+                    $node.setProperty('selected', true);
+                    continue;
+                }
+                $node.setProperty('selected', false);
+            }
+        });
+
         // 拖拽参数连线
         this.shadowRoot.addEventListener('start-connect-node', (event: any) => {
             event.stopPropagation();
             event.preventDefault();
-            const { node, param, paramDirection, lineType } = event.detail;
-            this.startConnect(lineType, node, param, paramDirection);
+            const { node, param, paramDirection, lineType, details } = event.detail;
+            this.startConnect(lineType, node, param, paramDirection, details);
         });
 
-        this.shadowRoot.addEventListener('mousedown', () => {
-            this.stopConnect();
+        requestAnimationFrame(() => {
+            refresh();
         });
-
-        refresh();
     }
 }
 registerElement('graph', GraphElement);
