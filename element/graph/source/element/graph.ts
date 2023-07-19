@@ -363,14 +363,14 @@ const graphUtils = {
 
                         $elem.data.setProperty('selectBox', reSelectBox);
                     }
-                    const mouseup = () => {
+                    const mouseup = (event: MouseEvent) => {
                         document.removeEventListener('mousemove', mousemove);
-                        document.removeEventListener('mouseup', mouseup);
+                        document.removeEventListener('mouseup', mouseup, true);
                         const reSelectBox = { x: 0, y: 0, w: 0, h: 0 };
                         $elem.data.setProperty('selectBox', reSelectBox);
                     }
                     document.addEventListener('mousemove', mousemove);
-                    document.addEventListener('mouseup', mouseup);
+                    document.addEventListener('mouseup', mouseup, true);
                     break;
                 }
 
@@ -399,16 +399,16 @@ const graphUtils = {
                         };
                         $elem.data.setProperty('offset', reOffset);
                     }
-                    const mouseup = () => {
-                        offset.x = offset.x + start.x;
-                        offset.y = offset.y + start.y;
-                        start.x = 0;
-                        start.y = 0;
+                    const mouseup = (event: MouseEvent) => {
+                        if (event.pageX !== point.x || event.pageY !== point.y) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                        }
                         document.removeEventListener('mousemove', mousemove);
-                        document.removeEventListener('moveup', mouseup);
+                        document.removeEventListener('mouseup', mouseup, true);
                     }
                     document.addEventListener('mousemove', mousemove);
-                    document.addEventListener('mouseup', mouseup);
+                    document.addEventListener('mouseup', mouseup, true);
                     break;
                 }
 
@@ -558,6 +558,15 @@ v-graph-node[moving] {
             },
         };
     }
+
+    /**
+     * 清空数据
+     */
+    clear() {
+        this.setProperty('nodes', []);
+        this.setProperty('lines', []);
+    }
+
     /**
      * 添加一个 node 数据
      * @param node 
@@ -605,7 +614,7 @@ v-graph-node[moving] {
      */
     getLine(id: string) {
         const lines = this.data.getProperty('lines');
-        return lines[id];
+        return lines ? lines[id] : undefined;
     }
 
     /**
@@ -855,6 +864,19 @@ v-graph-node[moving] {
         requestAnimationFrame(() => {
             refresh();
         });
+
+        // 创建 ResizeObserver 实例
+        const resizeObserver = new ResizeObserver(entries => {
+            // 在尺寸变化时执行的回调函数
+            entries.forEach(entry => {
+                // const { width, height } = entry.contentRect;
+                if (entry.target === this) {
+                    refresh();
+                }
+            });
+        });
+        // 将 ResizeObserver 添加到要观察的元素上
+        resizeObserver.observe(this);
     }
 }
 registerElement('graph', GraphElement);

@@ -3,7 +3,7 @@
 import type { PathParamRole } from '../interface';
 
 export function generateUUID() {
-    return 't_' + Date.now();
+    return 't_' + Date.now() + (Math.random() + '').substring(10);
 }
 
 /**
