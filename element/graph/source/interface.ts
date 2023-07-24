@@ -16,18 +16,18 @@ export interface GraphInfo {
 
 // 图配置
 export interface GraphOption {
-    // 渲染方式，纯色，网格
-    type: 'pure' | 'mesh';
-    // 网格尺寸
-    meshSize?: number;
-    // 原点坐标
-    originPoint?: boolean;
-    // origin 颜色
-    originColor?: string;
-    // mesh 颜色
-    meshColor?: string;
     // 背景颜色
     backgroundColor?: string;
+
+    // 网格尺寸
+    gridSize?: number;
+    // mesh 颜色
+    gridColor?: string;
+
+    // 原点坐标
+    showOriginPoint?: boolean;
+    // origin 颜色
+    originPointColor?: string;
 }
 
 // 图里节点的信息

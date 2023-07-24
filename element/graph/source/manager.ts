@@ -56,9 +56,7 @@ function generateDefaultGraph(): GraphInfo {
         nodeMap: new Map(),
         lineMap: new Map(),
         graphFilter: {},
-        option: {
-            type: 'pure',
-        },
+        option: {},
     }
 }
 

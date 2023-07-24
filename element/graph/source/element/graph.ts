@@ -26,18 +26,18 @@ const graphUtils = {
 
     renderMesh($elem: GraphElement, ctx: CanvasRenderingContext2D, box: {width: number, height: number}, offset: {x: number, y: number}, scale: number, option: GraphOption) {
         $elem.setAttribute('style', `--background-color: ${option.backgroundColor};`);
-        const step = (option.meshSize || 50) * scale;
+        const step = (option.gridSize || 50) * scale;
 
         ctx.clearRect(0, 0, box.width, box.height);
-        if (option.type === 'mesh') {
+        if (option.gridColor || option.gridSize) {
             const center = {
                 x: Math.round(box.width / 2) + 0.5 + offset.x,
                 y: Math.round(box.height / 2) + 0.5 + offset.y,
             };
 
-            if (option.originPoint) {
+            if (option.showOriginPoint) {
                 ctx.beginPath();
-                ctx.fillStyle = option.originColor || '#ccc';
+                ctx.fillStyle = option.originPointColor || '#ccc';
                 ctx.arc(center.x, center.y, 5 * scale, 0, 2 * Math.PI, true);
                 ctx.fill();
                 ctx.closePath();
@@ -56,7 +56,7 @@ const graphUtils = {
             ctx.lineTo(box.width, center.y);
     
             ctx.closePath();
-            ctx.strokeStyle = option.originColor || '#ccc';
+            ctx.strokeStyle = option.originPointColor || '#ccc';
             ctx.lineWidth = 1;
             ctx.stroke();
     
@@ -91,7 +91,7 @@ const graphUtils = {
             } while (y < box.height);
     
             ctx.closePath();
-            ctx.strokeStyle =  option.meshColor || '#666';
+            ctx.strokeStyle =  option.gridColor || '#666';
             ctx.lineWidth = 1;
             ctx.stroke();
         }
@@ -331,7 +331,7 @@ const graphUtils = {
                     // event.preventDefault();
 
                     const selectBox = $elem.data.getProperty('selectBox');
-                    const offset = $elem.data.getProperty('offset');
+                    // const offset = $elem.data.getProperty('offset');
                     const startPoint = {
                         x: event.pageX,
                         y: event.pageY,
@@ -364,6 +364,10 @@ const graphUtils = {
                         $elem.data.setProperty('selectBox', reSelectBox);
                     }
                     const mouseup = (event: MouseEvent) => {
+                        if (event.pageX !== startPoint.x || event.pageY !== startPoint.y) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                        }
                         document.removeEventListener('mousemove', mousemove);
                         document.removeEventListener('mouseup', mouseup, true);
                         const reSelectBox = { x: 0, y: 0, w: 0, h: 0 };
@@ -377,8 +381,8 @@ const graphUtils = {
                 // 拖拽移动整个画布
                 case 1:
                 case 2: {
-                    event.stopPropagation();
-                    event.preventDefault();
+                    // event.stopPropagation();
+                    // event.preventDefault();
     
                     const offset = $elem.data.getProperty('offset');
                     const start = {
@@ -429,6 +433,12 @@ const graphUtils = {
 };
 
 export class GraphElement extends BaseElement {
+    static get observedAttributes(): string[] {
+        return [
+            'type',
+        ];
+    }
+
     get HTMLTemplate() {
         return /*html*/`
 <canvas id="meshes"></canvas>
@@ -793,14 +803,6 @@ v-graph-node[moving] {
 
         });
 
-        // 监听 option 变化
-        this.data.addPropertyListener('option', (option) => {
-            const box = this.getBoundingClientRect();
-            const offset = this.data.getProperty('offset');
-            const scale = this.data.getProperty('scale');
-            graphUtils.renderMesh(this, ctx, box, offset, scale, option);
-        });
-
         // 监听 nodes 变化
         this.data.addPropertyListener('nodes', (nodes) => {
             const offset = this.data.getProperty('offset');
@@ -851,6 +853,14 @@ v-graph-node[moving] {
                 }
                 $node.setProperty('selected', false);
             }
+        });
+
+        this.data.addAttributeListener('type', (graphType) => {
+            const box = this.getBoundingClientRect();
+            const offset = this.data.getProperty('offset');
+            const scale = this.data.getProperty('scale');
+            const option = queryGraphOption(graphType);
+            graphUtils.renderMesh(this, ctx, box, offset, scale, option);
         });
 
         // 拖拽参数连线
