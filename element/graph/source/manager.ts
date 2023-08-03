@@ -252,6 +252,11 @@ g[type="curve"] > path {
     stroke-width: 2px;
     stroke-dasharray: 20, 5, 5, 5, 5, 5;
     animation: strokeMove 30s linear infinite;
+    transition: stroke 0.3s, fill 0.3s;
+}
+
+g[type="curve"][selected] > path, g[type="curve"]:hover > path {
+    stroke: #666;
 }
     `,
     updateSVGPath($g, scale, data) {

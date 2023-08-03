@@ -279,17 +279,10 @@ const graphUtils = {
         }
         $elem.shadowRoot.addEventListener('select-line', (event) => {
             // 取消 node 选中状态
-            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
-            for (let id in nodes) {
-                const node = nodes[id]!;
-                const $node = nodeToElem.get(node);
-                if ($node) {
-                    $node.setProperty('selected', false);
-                }
-            }
+            $elem.clearAllBlockSelected();
 
             if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
-                $elem.clearAllSelected();
+                $elem.clearAllLineSelected();
             }
             selectLine(event.target as SVGGElement);
         });
@@ -304,16 +297,10 @@ const graphUtils = {
             const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
 
             // 取消 line 选中状态
-            $elem.clearAllSelected();
+            $elem.clearAllLineSelected();
 
             if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
-                for (let id in nodes) {
-                    const node = nodes[id]!;
-                    const $node = nodeToElem.get(node);
-                    if ($node) {
-                        $node.setProperty('selected', false);
-                    }
-                }
+                $elem.clearAllBlockSelected();
             }
             const selected = $node.getProperty('selected');
             $node.setProperty('selected', !selected);
@@ -424,7 +411,7 @@ const graphUtils = {
         $elem.addEventListener('wheel', (event) => {
             event.stopPropagation();
             event.preventDefault();
-            const delta = event.deltaY / 100;
+            const delta = event.deltaY > 0 ? 0.05 : -0.05;
             let scale = $elem.data.getProperty('scale');
             scale += delta;
             $elem.data.setProperty('scale', Math.min(2, Math.max(0.2, scale)));
@@ -540,6 +527,18 @@ v-graph-node[moving] {
 
     __selectLines__: Set<SVGGElement> = new Set;
 
+    convertCoordinate(x: number, y: number) {
+        const calibration = this.getProperty('calibration') as { x: number, y: number, };
+        const offset = this.getProperty('offset') as { x: number, y: number, };
+        const scale = this.getProperty('scale') as number;
+
+        return {
+            x: (x - calibration.x - offset.x) / scale,
+            y: (y - calibration.y - offset.y) / scale,
+        };
+
+    }
+
     /**
      * 生成一个 node 数据
      * @param type
@@ -647,22 +646,24 @@ v-graph-node[moving] {
         this.data.emitProperty('lines', lines, lines);
     }
 
-    clearAllSelected() {
+    clearAllLineSelected() {
         this.__selectLines__.forEach(($g) => {
             if ($g.hasAttribute('selected')) {
                 $g.removeAttribute('selected');
                 this.__selectLines__.delete($g);
             }
         });
+    }
 
-        // const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
-        // for (let id in nodes) {
-        //     const node = nodes[id]!;
-        //     const $node = nodeToElem.get(node);
-        //     if ($node) {
-        //         $node.setProperty('selected', false);
-        //     }
-        // }
+    clearAllBlockSelected() {
+        const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+        for (let id in nodes) {
+            const node = nodes[id]!;
+            const $node = nodeToElem.get(node);
+            if ($node) {
+                $node.setProperty('selected', false);
+            }
+        }
     }
 
     __connect__event__: any;
@@ -834,7 +835,7 @@ v-graph-node[moving] {
                 return;
             }
 
-            this.clearAllSelected();
+            this.clearAllLineSelected();
 
             const selectBoxBoundingClientRect = $selectBox.getBoundingClientRect();
             for (let key in nodes) {
