@@ -195,7 +195,7 @@ export class GraphNodeElement extends BaseElement {
             const panel = queryNode(graphType, type);
 
             if (panel) {
-                this.shadowRoot.innerHTML = `<style>\n${panel.style}\n</style>\n${panel.template}`;
+                this.shadowRoot.innerHTML = `<style>:host > * {transform: translate3d(0, 0, 0);}\n${panel.style}\n</style>\n${panel.template}`;
             }
         });
 

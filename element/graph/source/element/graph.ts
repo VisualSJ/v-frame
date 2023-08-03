@@ -452,6 +452,7 @@ ${style.line}
     background-color: var(--background-color);
 
     position: relative;
+    overflow: hidden;
 
     --offset-x: 0;
     --offset-y: 0;
@@ -466,6 +467,7 @@ ${style.line}
     height: 100%;
     width: 100%;
     transform: translate(var(--offset-x), var(--offset-y)) scale(var(--scale));
+    will-change: transform;
 }
 #nodes {
 
@@ -485,6 +487,8 @@ v-graph-node {
     left: 50%;
     transform-origin: center center;
     transform: translateX(-50%) translateX(var(--offset-x)) translateY(-50%) translateY(var(--offset-y));
+    will-change: transform;
+    contain: content;
 }
 v-graph-node[moving] {
     z-index: 999;
@@ -766,42 +770,36 @@ v-graph-node[moving] {
         const $canvas = this.querySelector('canvas')! as HTMLCanvasElement;
         const ctx = $canvas.getContext('2d')!;
 
+        let refreshFrameLock = false;
         const refresh = () => {
+            if (refreshFrameLock) {
+                return;
+            }
+            refreshFrameLock = true;
             const box = this.getBoundingClientRect();
             const offset = this.data.getProperty('offset');
             const scale = this.data.getProperty('scale');
             const graphType = this.data.getAttribute('type') || 'default';
             const option = queryGraphOption(graphType);
+            $domBox.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
             graphUtils.resizeCanvas(this, $canvas, box);
             graphUtils.renderMesh(this, ctx, box, offset, scale, option);
             graphUtils.renderNodes(this, offset, scale);
             graphUtils.renderLines(this, offset, scale);
+            requestAnimationFrame(() => {
+                refreshFrameLock = false;
+            });
         }
 
         const $domBox = this.querySelector('#dom-box')!;
         // 监听 scale 变化
         this.data.addPropertyListener('scale', (scale) => {
-            const offset = this.data.getProperty('offset');
-            $domBox.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
             refresh();
         });
 
         // 监听 offset 变化
-        let lock = false;
         this.data.addPropertyListener('offset', (offset) => {
-            if (lock) {
-                return;
-            }
-            requestAnimationFrame(() => {
-                const scale = this.data.getProperty('scale');
-                $domBox.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
-    
-                const graphType = this.data.getAttribute('type') || 'default';
-                const option = queryGraphOption(graphType);
-                const box = this.getBoundingClientRect();
-                graphUtils.renderMesh(this, ctx, box, offset, scale, option);
-            });
-
+            refresh();
         });
 
         // 监听 nodes 变化
@@ -872,15 +870,12 @@ v-graph-node[moving] {
             this.startConnect(lineType, node, param, paramDirection, details);
         });
 
-        requestAnimationFrame(() => {
-            refresh();
-        });
+        refresh();
 
         // 创建 ResizeObserver 实例
         const resizeObserver = new ResizeObserver(entries => {
             // 在尺寸变化时执行的回调函数
             entries.forEach(entry => {
-                // const { width, height } = entry.contentRect;
                 if (entry.target === this) {
                     refresh();
                 }
