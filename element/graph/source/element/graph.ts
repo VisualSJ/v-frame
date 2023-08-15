@@ -650,6 +650,32 @@ v-graph-node[moving] {
         this.data.emitProperty('lines', lines, lines);
     }
 
+    getSelectedNodeList(): NodeInfo[] {
+        const nodeList = [];
+        const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+        for (let id in nodes) {
+            const node = nodes[id]!;
+            const $node = nodeToElem.get(node);
+            if ($node && $node.getProperty('selected') === true) {
+                nodeList.push(node);
+            }
+        }
+        return nodeList;
+    }
+
+    getSelectedLineList(): LineInfo[] {
+        const lineList: LineInfo[] = [];
+        const lineMap = this.getProperty('lines');
+        this.__selectLines__.forEach(($g) => {
+            const uuid = $g.getAttribute('line-uuid');
+            if (uuid) {
+                const line = lineMap[uuid];
+                line && lineList.push(line);
+            }
+        });
+        return lineList;
+    }
+
     clearAllLineSelected() {
         this.__selectLines__.forEach(($g) => {
             if ($g.hasAttribute('selected')) {
