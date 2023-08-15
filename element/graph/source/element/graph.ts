@@ -370,7 +370,7 @@ const graphUtils = {
                 case 2: {
                     // event.stopPropagation();
                     // event.preventDefault();
-    
+
                     const offset = $elem.data.getProperty('offset');
                     const start = {
                         x: offset.x,

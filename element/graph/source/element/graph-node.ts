@@ -90,12 +90,12 @@ export class GraphNodeElement extends BaseElement {
         }
         const stopmove = () => {
             document.removeEventListener('mousemove', mousemove);
-            document.removeEventListener('mouseup', mouseup);
+            document.removeEventListener('mouseup', mouseup, true);
             document.removeEventListener('stop-move-graph-node', stopmove);
             this.removeAttribute('moving');
         };
         document.addEventListener('mousemove', mousemove);
-        document.addEventListener('mouseup', mouseup);
+        document.addEventListener('mouseup', mouseup, true);
         document.addEventListener('stop-move-graph-node', stopmove);
     }
 
