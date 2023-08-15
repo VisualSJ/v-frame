@@ -190,13 +190,16 @@ export class GraphNodeElement extends BaseElement {
     }
 
     onInit() {
+        let inited = false;
         this.data.addPropertyListener('type', (type, legacy) => {
             const graphType = this.data.getProperty('graphType');
             const panel = queryNode(graphType, type);
+            const details = this.data.getProperty('details');
 
             if (panel) {
                 this.shadowRoot.innerHTML = `<style>:host > * {transform: translate3d(0, 0, 0);}\n${panel.style}\n</style>\n${panel.template}`;
             }
+            inited && panel.onUpdate.call(this, details);
         });
 
         this.data.addPropertyListener('details', (details) => {
@@ -204,6 +207,8 @@ export class GraphNodeElement extends BaseElement {
             const graphType = this.data.getProperty('graphType');
             const panel = queryNode(graphType, type);
             panel.onInit.call(this, details);
+            inited = true;
+            inited && panel.onUpdate.call(this, details);
         });
 
         this.data.addPropertyListener('position', (position, legacy) => {

@@ -365,26 +365,6 @@ registerNode('class-diagram', 'class-node', {
         const $menu = this.querySelector('.menu')!;
         this.querySelector('.class-name')!.innerHTML = details.name;
 
-        const updateHTML = (type: string, list: string[]) => {
-            if (!Array.isArray(list)) {
-                return;
-            }
-            let HTML = ``;
-            for (const item of list) {
-            HTML += `<div>${item}</div>`;
-            }
-            this.querySelector(`.${type}`)!.innerHTML = HTML;
-        }
-        this.data.addPropertyListener('details', (details) => {
-            updateHTML('property', details.property);
-        });
-        updateHTML('property', details.property);
-
-        this.data.addPropertyListener('details', (details) => {
-            updateHTML('function', details.function);
-        });
-        updateHTML('function', details.function);
-
         this.addEventListener('mousedown', (event) => {
             event.stopPropagation();
             event.preventDefault();
@@ -413,5 +393,26 @@ registerNode('class-diagram', 'class-node', {
 
             this.startConnect(type);
         });
+    },
+    onUpdate(details) {
+        const updateHTML = (type: string, list: string[]) => {
+            if (!Array.isArray(list)) {
+                return;
+            }
+            let HTML = ``;
+            for (const item of list) {
+            HTML += `<div>${item}</div>`;
+            }
+            this.querySelector(`.${type}`)!.innerHTML = HTML;
+        }
+        this.data.addPropertyListener('details', (details) => {
+            updateHTML('property', details.property);
+        });
+        updateHTML('property', details.property);
+
+        this.data.addPropertyListener('details', (details) => {
+            updateHTML('function', details.function);
+        });
+        updateHTML('function', details.function);
     },
 });

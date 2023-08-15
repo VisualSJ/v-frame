@@ -6,7 +6,7 @@ import { ParamConnectData } from './data';
 
 import { NodeInfo, LineInfo, GraphOption } from '../interface';
 import { getParamElementOffset, generateUUID, queryParamInfo } from './utils';
-import { queryLine, queryGraphFliter, queryGraphOption } from '../manager';
+import { queryLine, queryGraphFliter, queryGraphOption, eventEmmiter } from '../manager';
 
 import type { GraphNodeElement } from './graph-node';
 
@@ -800,6 +800,22 @@ v-graph-node[moving] {
         // 监听 offset 变化
         this.data.addPropertyListener('offset', (offset) => {
             refresh();
+        });
+
+        eventEmmiter.addListener('node-registered', (graph, type) => {
+            const $nodes = this.querySelectorAll('#nodes > v-graph-node');
+            const nodes = this.data.getProperty('nodes');
+            // 循环已有的 HTML 节点
+            for (let i = 0; i < $nodes.length; i++) {
+                const $node = $nodes[i] as BaseElement;
+                const uuid = $node.getAttribute('node-uuid') || '';
+                const node = nodes[uuid];
+
+                if (node && node.type === type) {
+                    // 更新已存在的节点内的数据
+                    $node.data.emitProperty('type', node.type, node.type);
+                }
+            }
         });
 
         // 监听 nodes 变化

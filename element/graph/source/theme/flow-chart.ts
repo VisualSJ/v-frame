@@ -98,6 +98,8 @@ registerNode('flow-chart', 'node', {
         this.data.addPropertyListener('details', (details) => {
             updateHTML(details.label);
         });
-        updateHTML(details.label);
+    },
+    onUpdate(details) {
+        this.querySelector(`.content`)!.innerHTML = details.label;
     },
 });

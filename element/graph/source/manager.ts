@@ -3,6 +3,9 @@
 import { LineInfo, NodeInfo, GraphOption } from './interface';
 import type { ParamConnectData } from './element/data';
 import type { GraphNodeElement } from './element/graph-node';
+import { EventEmmiter } from './event';
+
+export const eventEmmiter = new EventEmmiter();
 
 /**
  * Type 管理器
@@ -13,6 +16,7 @@ interface NodeTypeOption {
     template: string;
     style: string;
     onInit(this: GraphNodeElement, ...args: any[]): void;
+    onUpdate(this: GraphNodeElement, ...args: any[]): void;
 }
 
 interface LineTypeOption {
@@ -66,6 +70,8 @@ export function registerGraphOption(graphType: string, option: GraphOption) {
     }
     const graphInfo = graphTypeMap.get(graphType)!;
     graphInfo.option = option;
+
+    eventEmmiter.emit('graph-registered', graphType, option);
 }
 
 export function queryGraphOption(graphType: string) {
@@ -83,6 +89,8 @@ export function registerNode(graphType: string, nodeType: string, option: NodeTy
     }
     const graphInfo = graphTypeMap.get(graphType)!;
     graphInfo.nodeMap.set(nodeType, option);
+
+    eventEmmiter.emit('node-registered', graphType, nodeType, option);
 }
 
 /**
@@ -110,6 +118,7 @@ registerNode('*', 'unknown', {
     template: /*html*/`<div>Unknown</div>`,
     style: /*css*/`div { background: #77777799; color: #eee; padding: 6px 12px; }`,
     onInit() {},
+    onUpdate() {},
 });
 registerNode('*', '*', queryNode('*', 'unknown'));
 
@@ -121,6 +130,8 @@ export function registerLine(graphType: string, lineType: string, option: LineTy
     }
     const graphInfo = graphTypeMap.get(graphType)!;
     graphInfo.lineMap.set(lineType, option);
+
+    eventEmmiter.emit('node-registered', graphType, lineType, option);
 }
 
 export function queryLine(graphType: string, lineType: string): LineTypeOption {
@@ -285,7 +296,7 @@ g[type="curve"][selected] > path, g[type="curve"]:hover > path {
         }
 
         // 生成曲线的时候，如果是单向曲线，需要预留的最低宽度
-        const cm = scale * 100;
+        const cm = 100;
 
         switch (data.r1) {
             case 'left':
