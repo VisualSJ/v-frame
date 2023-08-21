@@ -4,7 +4,7 @@ import { registerElement, BaseElement, style } from '@itharbors/ui-core';
 
 import { ParamConnectData } from './data';
 
-import { NodeInfo, LineInfo, GraphOption } from '../interface';
+import { NodeInfo, LineInfo, GraphOption, SelectItemInfo } from '../interface';
 import { getParamElementOffset, generateUUID, queryParamInfo } from './utils';
 import { queryLine, queryGraphFliter, queryGraphOption, eventEmmiter } from '../manager';
 
@@ -44,52 +44,52 @@ const graphUtils = {
             }
 
             ctx.beginPath();
-    
+
             ctx.lineWidth = 1;
-    
+
             ctx.fill();
 
             ctx.moveTo(center.x, 0);
             ctx.lineTo(center.x, box.height);
-    
+
             ctx.moveTo(0, center.y);
             ctx.lineTo(box.width, center.y);
-    
+
             ctx.closePath();
             ctx.strokeStyle = option.originPointColor || '#ccc';
             ctx.lineWidth = 1;
             ctx.stroke();
-    
+
             ctx.beginPath();
-    
+
             let x = center.x;
             do {
                 x = x - step;
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, box.height);
             } while (x > 0);
-    
+
             x = center.x;
             do {
                 x = x + step;
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, box.height);
             } while (x < box.width);
-    
+
             let y = center.y;
             do {
                 y = y - step;
                 ctx.moveTo(0, y);
                 ctx.lineTo(box.width, y);
             } while (y > 0);
-    
+
             y = center.y;
             do {
                 y = y + step;
                 ctx.moveTo(0, y);
                 ctx.lineTo(box.width, y);
             } while (y < box.height);
-    
+
             ctx.closePath();
             ctx.strokeStyle =  option.gridColor || '#666';
             ctx.lineWidth = 1;
@@ -221,8 +221,8 @@ const graphUtils = {
                 this.renderLine(graphType, $line, line, lines, nodes, scale);
             }
         }
-        
-        
+
+
         // 循环 nodes 数据，新增数据的话，创建新节点
         for (const uuid in lines) {
             const line = lines[uuid];
@@ -380,7 +380,7 @@ const graphUtils = {
                         x: event.pageX,
                         y: event.pageY,
                     };
-    
+
                     const mousemove = (event: MouseEvent) => {
                         start.x = event.pageX - point.x;
                         start.y = event.pageY - point.y;
@@ -404,7 +404,7 @@ const graphUtils = {
                 }
 
             }
-            
+
         });
 
         // 鼠标滚轮
@@ -435,7 +435,7 @@ export class GraphElement extends BaseElement {
 </div>
 <div class="select-box"></div>
 `;
-    } 
+    }
 
     get HTMLStyle() {
         return /*css*/`
@@ -521,7 +521,7 @@ v-graph-node[moving] {
             calibration: { x: 0, y: 0, },
             // 框选区域，记录的坐标是 HTML 坐标
             selectBox: { x: 0, y: 0, w: 0, h: 0, },
-    
+
             // 缩放比例
             scale: 1,
             nodes: {},
@@ -582,8 +582,8 @@ v-graph-node[moving] {
 
     /**
      * 添加一个 node 数据
-     * @param node 
-     * @param id 
+     * @param node
+     * @param id
      */
     addNode(node: NodeInfo, id?: string) {
         const uuid: string = id || generateUUID();
@@ -594,8 +594,8 @@ v-graph-node[moving] {
 
     /**
      * 添加一个 line 数据
-     * @param line 
-     * @param id 
+     * @param line
+     * @param id
      */
     addLine(line: LineInfo, id?: string) {
         const lines = this.getProperty('lines') as { [key: string]: LineInfo | undefined  };
@@ -612,8 +612,8 @@ v-graph-node[moving] {
 
     /**
      * 获取一个节点
-     * @param id 
-     * @returns 
+     * @param id
+     * @returns
      */
     getNode(id: string) {
         const nodes = this.data.getProperty('nodes');
@@ -622,8 +622,8 @@ v-graph-node[moving] {
 
     /**
      * 获取一个线段
-     * @param id 
-     * @returns 
+     * @param id
+     * @returns
      */
     getLine(id: string) {
         const lines = this.data.getProperty('lines');
@@ -632,7 +632,7 @@ v-graph-node[moving] {
 
     /**
      * 删除一个 Node
-     * @param id 
+     * @param id
      */
     removeNode(id: string) {
         const nodes = this.getProperty('nodes');
@@ -642,7 +642,7 @@ v-graph-node[moving] {
 
     /**
      * 删除一条连接线
-     * @param id 
+     * @param id
      */
     removeLine(id: string) {
         const lines = this.getProperty('lines');
@@ -650,27 +650,33 @@ v-graph-node[moving] {
         this.data.emitProperty('lines', lines, lines);
     }
 
-    getSelectedNodeList(): NodeInfo[] {
-        const nodeList = [];
+    getSelectedNodeList(): SelectItemInfo[] {
+        const nodeList: SelectItemInfo[] = [];
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         for (let id in nodes) {
             const node = nodes[id]!;
             const $node = nodeToElem.get(node);
             if ($node && $node.getProperty('selected') === true) {
-                nodeList.push(node);
+                nodeList.push({
+                    id: id,
+                    target: node,
+                });
             }
         }
         return nodeList;
     }
 
-    getSelectedLineList(): LineInfo[] {
-        const lineList: LineInfo[] = [];
+    getSelectedLineList(): SelectItemInfo[] {
+        const lineList: SelectItemInfo[] = [];
         const lineMap = this.getProperty('lines');
         this.__selectLines__.forEach(($g) => {
             const uuid = $g.getAttribute('line-uuid');
             if (uuid) {
                 const line = lineMap[uuid];
-                line && lineList.push(line);
+                line && lineList.push({
+                    id: uuid,
+                    target: line
+                });
             }
         });
         return lineList;
@@ -700,11 +706,11 @@ v-graph-node[moving] {
 
     /**
      * 开始连接节点/参数
-     * @param lineType 
-     * @param nodeUUID 
-     * @param paramName 
-     * @param paramDirection 
-     * @returns 
+     * @param lineType
+     * @param nodeUUID
+     * @param paramName
+     * @param paramDirection
+     * @returns
      */
     startConnect(lineType: LineInfo['type'], nodeUUID: string, paramName?: string, paramDirection?: 'input' | 'output', details?: { [key: string]: any }) {
         const lines = this.data.getProperty('lines') as { [key: string]: LineInfo | undefined, };
@@ -772,7 +778,7 @@ v-graph-node[moving] {
 
     /**
      * 是否正在连接动作中
-     * @returns 
+     * @returns
      */
     hasConnect() {
         const lines = this.data.getProperty('lines');
