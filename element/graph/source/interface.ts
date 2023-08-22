@@ -60,5 +60,11 @@ export interface LineInfo {
     };
 }
 
+// 选中
+export interface SelectItemInfo {
+    id: string;
+    target: NodeInfo | LineInfo;
+}
+
 // 曲线生成规则，允许单向或者全向绘制
 export type PathParamRole = 'up' | 'down' | 'left' | 'right' | 'all';
