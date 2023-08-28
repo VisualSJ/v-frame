@@ -246,7 +246,8 @@ g[type="straight"] > text {
 
 registerLine('*', 'curve', {
     template: /*svg*/`
-<path d=""></path>
+<path class="stroke" d=""></path>
+<path class="background" d=""></path>
     `,
     style: /*css*/`
 @keyframes strokeMove {
@@ -257,7 +258,7 @@ registerLine('*', 'curve', {
         stroke-dashoffset: 0;
     }
 }
-g[type="curve"] > path {
+g[type="curve"] > path.stroke {
     fill: none;
     stroke: #fafafa;
     stroke-width: 2px;
@@ -265,8 +266,12 @@ g[type="curve"] > path {
     animation: strokeMove 30s linear infinite;
     transition: stroke 0.3s, fill 0.3s;
 }
-
-g[type="curve"][selected] > path, g[type="curve"]:hover > path {
+g[type="curve"] > path.background {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 10px;
+}
+g[type="curve"][selected] > path.stroke, g[type="curve"]:hover > path.stroke {
     stroke: #666;
 }
     `,
@@ -351,8 +356,9 @@ g[type="curve"][selected] > path, g[type="curve"]:hover > path {
                 break;
         }
 
-        const $path = $g.querySelector(`path`)!;
-        $path.setAttribute('d', `M${data.x1},${data.y1} C${cpx1},${cpy1} ${cpx2},${cpy2} ${data.x2},${data.y2}`);
+        const $pathList = $g.querySelectorAll(`path`)!;
+        $pathList[0].setAttribute('d', `M${data.x1},${data.y1} C${cpx1},${cpy1} ${cpx2},${cpy2} ${data.x2},${data.y2}`);
+        $pathList[1].setAttribute('d', `M${data.x1},${data.y1} C${cpx1},${cpy1} ${cpx2},${cpy2} ${data.x2},${data.y2}`);
     },
 });
 registerLine('*', '*', queryLine('*', 'curve'));

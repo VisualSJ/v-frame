@@ -687,6 +687,12 @@ v-graph-node[moving] {
             if ($g.hasAttribute('selected')) {
                 $g.removeAttribute('selected');
                 this.__selectLines__.delete($g);
+                const custom = new CustomEvent('unselect-line', {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: {},
+                });
+                $g.dispatchEvent(custom);
             }
         });
     }
