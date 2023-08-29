@@ -61,9 +61,13 @@ export interface LineInfo {
 }
 
 // 选中
-export interface SelectItemInfo {
+export interface SelectNodeInfo {
     id: string;
-    target: NodeInfo | LineInfo;
+    target: NodeInfo;
+}
+export interface SelectLineInfo {
+    id: string;
+    target: LineInfo;
 }
 
 // 曲线生成规则，允许单向或者全向绘制

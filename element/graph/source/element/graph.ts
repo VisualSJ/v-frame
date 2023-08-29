@@ -4,7 +4,7 @@ import { registerElement, BaseElement, style } from '@itharbors/ui-core';
 
 import { ParamConnectData } from './data';
 
-import { NodeInfo, LineInfo, GraphOption, SelectItemInfo } from '../interface';
+import { NodeInfo, LineInfo, GraphOption, SelectNodeInfo, SelectLineInfo } from '../interface';
 import { getParamElementOffset, generateUUID, queryParamInfo } from './utils';
 import { queryLine, queryGraphFliter, queryGraphOption, eventEmmiter } from '../manager';
 
@@ -286,24 +286,18 @@ const graphUtils = {
             }
             selectLine(event.target as SVGGElement);
         });
-
         // 处理选中状态，交给 node 自己控制
-        $elem.shadowRoot.addEventListener('click', (event) => {
-            const $node = event.target as GraphNodeElement;
-            if ($node.tagName !== 'V-GRAPH-NODE') {
-                return;
-            }
-
-            const nodes = $elem.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
-
-            // 取消 line 选中状态
+        $elem.shadowRoot.addEventListener('clear-select-graph-node', (event) => {
             $elem.clearAllLineSelected();
-
-            if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
-                $elem.clearAllBlockSelected();
-            }
-            const selected = $node.getProperty('selected');
-            $node.setProperty('selected', !selected);
+            $elem.clearAllBlockSelected();
+        });
+        $elem.shadowRoot.addEventListener('select-graph-node', (event) => {
+            const $node = event.target as GraphNodeElement;
+            $node.setProperty('selected', true);
+        });
+        $elem.shadowRoot.addEventListener('unselect-graph-node', (event) => {
+            const $node = event.target as GraphNodeElement;
+            $node.setProperty('selected', false);
         });
 
         $elem.addEventListener('mousedown', (event) => {
@@ -415,6 +409,82 @@ const graphUtils = {
             let scale = $elem.data.getProperty('scale');
             scale += delta;
             $elem.data.setProperty('scale', Math.min(2, Math.max(0.2, scale)));
+        });
+
+        // 拖拽节点
+        $elem.shadowRoot.addEventListener('start-move-graph-node', () => {
+            const $nodeInfoList = $elem.getSelectedNodeList();
+            // this.setAttribute('moving', '');
+            let t = false;
+            const scale = $elem.getProperty('scale');
+            // const moveStartPoint = this.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
+            const mousemove = (event: MouseEvent) => {
+                if (!t) {
+                    $nodeInfoList.forEach((info) => {
+                        const $node = nodeToElem.get(info.target)!;
+                        $node.setAttribute('moving', '');
+                        const position = $node.getProperty('position');
+                        const scale = $node.getProperty('scale');
+                        const moveStartPoint = $node.getProperty('moveStartPoint');
+                        moveStartPoint.x = position.x * scale;
+                        moveStartPoint.y = position.y * scale;
+                        moveStartPoint.pageX = event.pageX;
+                        moveStartPoint.pageY = event.pageY;
+                    });
+                    t = true;
+                }
+
+                $nodeInfoList.forEach((info) => {
+                    const $node = nodeToElem.get(info.target)!;
+                    const scale = $node.getProperty('scale');
+                    const moveStartPoint = $node.getProperty('moveStartPoint');
+                    
+                    const offset = {
+                        x: event.pageX - moveStartPoint.pageX,
+                        y: event.pageY - moveStartPoint.pageY,
+                    };
+                    const reOffset = {
+                        x: (moveStartPoint.x + offset.x) / scale,
+                        y: (moveStartPoint.y + offset.y) / scale,
+                    };
+                    $node.setProperty('position', reOffset);
+                });
+            }
+            const mouseup = (event: MouseEvent) => {
+                if (t) {
+                    $nodeInfoList.forEach((info) => {
+                        const $node = nodeToElem.get(info.target)!;
+                        $node.setAttribute('moving', '');
+                        const scale = $node.getProperty('scale');
+                        const moveStartPoint = $node.getProperty('moveStartPoint');
+                        
+                        const offset = {
+                            x: event.pageX - moveStartPoint.pageX,
+                            y: event.pageY - moveStartPoint.pageY,
+                        };
+                        const reOffset = {
+                            x: (moveStartPoint.x + offset.x) / scale,
+                            y: (moveStartPoint.y + offset.y) / scale,
+                        };
+                        $node.setProperty('position', reOffset);
+                    });
+                }
+                stopmove();
+            }
+            const stopmove = () => {
+                document.removeEventListener('mousemove', mousemove);
+                document.removeEventListener('mouseup', mouseup, true);
+                $elem.shadowRoot.removeEventListener('stop-move-graph-node', stopmove);
+
+                $nodeInfoList.forEach((info) => {
+                    const $node = nodeToElem.get(info.target)!;
+                    $node.removeAttribute('moving');
+                    
+                });
+            };
+            document.addEventListener('mousemove', mousemove);
+            document.addEventListener('mouseup', mouseup, true);
+            $elem.shadowRoot.addEventListener('stop-move-graph-node', stopmove);
         });
     },
 };
@@ -650,8 +720,8 @@ v-graph-node[moving] {
         this.data.emitProperty('lines', lines, lines);
     }
 
-    getSelectedNodeList(): SelectItemInfo[] {
-        const nodeList: SelectItemInfo[] = [];
+    getSelectedNodeList(): SelectNodeInfo[] {
+        const nodeList: SelectNodeInfo[] = [];
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         for (let id in nodes) {
             const node = nodes[id]!;
@@ -666,8 +736,8 @@ v-graph-node[moving] {
         return nodeList;
     }
 
-    getSelectedLineList(): SelectItemInfo[] {
-        const lineList: SelectItemInfo[] = [];
+    getSelectedLineList(): SelectLineInfo[] {
+        const lineList: SelectLineInfo[] = [];
         const lineMap = this.getProperty('lines');
         this.__selectLines__.forEach(($g) => {
             const uuid = $g.getAttribute('line-uuid');

@@ -48,55 +48,12 @@ export class GraphNodeElement extends BaseElement {
      * 直到执行 stopMove 或者点击一下页面
      */
     startMove() {
-        this.setAttribute('moving', '');
-        let t = false;
-        const scale = this.data.getProperty('scale');
-        const moveStartPoint = this.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
-        const mousemove = (event: MouseEvent) => {
-            if (!t) {
-                const position = this.data.getProperty('position');
-                const scale = this.data.getProperty('scale');
-                const moveStartPoint = this.data.getProperty('moveStartPoint') as GraphNodeElementData['moveStartPoint'];
-                moveStartPoint.x = position.x * scale;
-                moveStartPoint.y = position.y * scale;
-                moveStartPoint.pageX = event.pageX;
-                moveStartPoint.pageY = event.pageY;
-                t = true;
-            }
-
-            const offset = {
-                x: event.pageX - moveStartPoint.pageX,
-                y: event.pageY - moveStartPoint.pageY,
-            };
-            const reOffset = {
-                x: (moveStartPoint.x + offset.x) / scale,
-                y: (moveStartPoint.y + offset.y) / scale,
-            };
-            this.data.setProperty('position', reOffset);
-        }
-        const mouseup = (event: MouseEvent) => {
-            if (t) {
-                const offset = {
-                    x: event.pageX - moveStartPoint.pageX,
-                    y: event.pageY - moveStartPoint.pageY,
-                };
-                const reOffset = {
-                    x: (moveStartPoint.x + offset.x) / scale,
-                    y: (moveStartPoint.y + offset.y) / scale,
-                };
-                this.data.setProperty('position', reOffset);
-            }
-            stopmove();
-        }
-        const stopmove = () => {
-            document.removeEventListener('mousemove', mousemove);
-            document.removeEventListener('mouseup', mouseup, true);
-            document.removeEventListener('stop-move-graph-node', stopmove);
-            this.removeAttribute('moving');
-        };
-        document.addEventListener('mousemove', mousemove);
-        document.addEventListener('mouseup', mouseup, true);
-        document.addEventListener('stop-move-graph-node', stopmove);
+        const custom = new CustomEvent('start-move-graph-node', {
+            bubbles: true,
+            cancelable: true,
+            detail: {},
+        });
+        this.dispatchEvent(custom);
     }
 
     /**
@@ -104,8 +61,12 @@ export class GraphNodeElement extends BaseElement {
      * 在没有开始拖拽的时候执行无效
      */
     stopMove() {
-        const custom = new CustomEvent('stop-move-graph-node');
-        document.dispatchEvent(custom);
+        const custom = new CustomEvent('stop-move-graph-node', {
+            bubbles: true,
+            cancelable: true,
+            detail: {},
+        });
+        this.dispatchEvent(custom);
     }
 
     /**
@@ -155,6 +116,42 @@ export class GraphNodeElement extends BaseElement {
     }
 
     /**
+     * 选中当前节点
+     */
+    select() {
+        const custom = new CustomEvent('select-graph-node', {
+            bubbles: true,
+            cancelable: true,
+            detail: {},
+        });
+        this.dispatchEvent(custom);
+    }
+
+    /**
+     * 取消选中当前节点
+     */
+    unselect() {
+        const custom = new CustomEvent('unselect-graph-node', {
+            bubbles: true,
+            cancelable: true,
+            detail: {},
+        });
+        this.dispatchEvent(custom);
+    }
+
+    /**
+     * 清空所有选中的元素
+     */
+    clearOtherSelected() {
+        const custom = new CustomEvent('clear-select-graph-node', {
+            bubbles: true,
+            cancelable: true,
+            detail: {},
+        });
+        this.dispatchEvent(custom);
+    }
+
+    /**
      * 绑定默认的参数连接事件
      */
     bindDefaultParamEvent() {
@@ -185,6 +182,10 @@ export class GraphNodeElement extends BaseElement {
         this.addEventListener('mousedown', (event) => {
             event.stopPropagation();
             event.preventDefault();
+            if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+                this.clearOtherSelected();
+            }
+            this.select();
             this.startMove();
         });
     }
