@@ -133,9 +133,9 @@ const graphUtils = {
                 continue;
             }
             const $node = document.createElement('v-graph-node') as GraphNodeElement;
-
             // 关联数据
             nodeToElem.set(node, $node);
+            $root.appendChild($node);
 
             $node.data.setAttribute('node-uuid', uuid);
             $node.data.setProperty('scale', scale);
@@ -151,7 +151,6 @@ const graphUtils = {
                 this.renderLines($elem, offset, scale);
             });
 
-            $root.appendChild($node);
         }
     },
 
@@ -601,6 +600,12 @@ v-graph-node[moving] {
 
     __selectLines__: Set<SVGGElement> = new Set;
 
+    /**
+     * 坐标转换，传入一个元素上获取的坐标，转换成 graph 内的一个坐标值
+     * @param x 
+     * @param y 
+     * @returns 
+     */
     convertCoordinate(x: number, y: number) {
         const calibration = this.getProperty('calibration') as { x: number, y: number, };
         const offset = this.getProperty('offset') as { x: number, y: number, };
@@ -610,11 +615,10 @@ v-graph-node[moving] {
             x: (x - calibration.x - offset.x) / scale,
             y: (y - calibration.y - offset.y) / scale,
         };
-
     }
 
     /**
-     * 生成一个 node 数据
+     * 生成一个空的 node 数据
      * @param type
      */
     generateNode(type?: string): NodeInfo {
@@ -626,7 +630,7 @@ v-graph-node[moving] {
     }
 
     /**
-     * 生成一个 line 数据
+     * 生成一个空的 line 数据
      * @param type
      */
     generateLine(type?: string, details?: { [key: string]: any }): LineInfo {
@@ -677,6 +681,11 @@ v-graph-node[moving] {
         if (lineFilter!(nodes, lines, line, input, output)) {
             lines[id || generateUUID()] = line;
             this.data.emitProperty('lines', lines, lines);
+
+            const customEvent = new CustomEvent('line-added', {
+                detail: { line, },
+            });
+            this.dispatchEvent(customEvent);
         }
     }
 
@@ -688,6 +697,11 @@ v-graph-node[moving] {
     getNode(id: string) {
         const nodes = this.data.getProperty('nodes');
         return nodes[id];
+    }
+
+    queryNodeElement(id: string) {
+        const $node = this.querySelector(`#nodes > v-graph-node[node-uuid="${id}"]`);
+        return $node;
     }
 
     /**
@@ -716,10 +730,19 @@ v-graph-node[moving] {
      */
     removeLine(id: string) {
         const lines = this.getProperty('lines');
+        const line = lines[id];
         delete lines[id];
         this.data.emitProperty('lines', lines, lines);
+        const customEvent = new CustomEvent('line-removed', {
+            detail: { line, },
+        });
+        this.dispatchEvent(customEvent);
     }
 
+    /**
+     * 获取选中的所有节点
+     * @returns 
+     */
     getSelectedNodeList(): SelectNodeInfo[] {
         const nodeList: SelectNodeInfo[] = [];
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
@@ -736,6 +759,10 @@ v-graph-node[moving] {
         return nodeList;
     }
 
+    /**
+     * 获取选中的所有线段
+     * @returns 
+     */
     getSelectedLineList(): SelectLineInfo[] {
         const lineList: SelectLineInfo[] = [];
         const lineMap = this.getProperty('lines');
@@ -767,6 +794,9 @@ v-graph-node[moving] {
         });
     }
 
+    /**
+     * 清空所哟选中的节点
+     */
     clearAllBlockSelected() {
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         for (let id in nodes) {

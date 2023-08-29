@@ -182,10 +182,12 @@ export class GraphNodeElement extends BaseElement {
         this.addEventListener('mousedown', (event) => {
             event.stopPropagation();
             event.preventDefault();
-            if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
-                this.clearOtherSelected();
+            if (!this.hasAttribute('selected')) {
+                if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+                    this.clearOtherSelected();
+                }
+                this.select();
             }
-            this.select();
             this.startMove();
         });
     }
@@ -223,6 +225,14 @@ export class GraphNodeElement extends BaseElement {
                 this.removeAttribute('selected');
             }
         });
+    }
+
+    onUpdate() {
+        const type = this.data.getProperty('type');
+        const graphType = this.data.getProperty('graphType');
+        const details = this.data.getProperty('details');
+        const panel = queryNode(graphType, type);
+        panel.onUpdate.call(this, details);
     }
 }
 registerElement('graph-node', GraphNodeElement);
