@@ -1,6 +1,8 @@
 'use strict';
 
+import type { SelectNodeDetail, MoveNodeDetail, InterruptMoveNodeDetail, UnselectNodeDetail, ClearSelectNodeDetail, ConnectNodeDetail, InterruptConnectNodeDetail } from './event-interface';
 import type { GraphElement } from './graph';
+
 import { registerElement, BaseElement } from '@itharbors/ui-core';
 import { queryNode } from '../manager';
 
@@ -42,18 +44,23 @@ export class GraphNodeElement extends BaseElement {
         };
     }
 
+    getHost() {
+        const $shadom = this.getRootNode() as ShadowRoot;
+        return $shadom?.host;
+    }
+
     /**
      * 开始拖拽节点
      * 运行后，节点开始随着鼠标移动
      * 直到执行 stopMove 或者点击一下页面
      */
     startMove() {
-        const custom = new CustomEvent('start-move-graph-node', {
-            bubbles: true,
-            cancelable: true,
+        const custom = new CustomEvent<MoveNodeDetail>('move-node', {
+            bubbles: false,
+            cancelable: false,
             detail: {},
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
@@ -61,12 +68,12 @@ export class GraphNodeElement extends BaseElement {
      * 在没有开始拖拽的时候执行无效
      */
     stopMove() {
-        const custom = new CustomEvent('stop-move-graph-node', {
-            bubbles: true,
-            cancelable: true,
+        const custom = new CustomEvent<InterruptMoveNodeDetail>('interrupt-move-node', {
+            bubbles: false,
+            cancelable: false,
             detail: {},
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
@@ -84,9 +91,9 @@ export class GraphNodeElement extends BaseElement {
             return;
         }
 
-        const custom = new CustomEvent('start-connect-node', {
-            bubbles: true,
-            cancelable: true,
+        const custom = new CustomEvent<ConnectNodeDetail>('connect-node', {
+            bubbles: false,
+            cancelable: false,
             detail: {
                 lineType: type,
                 node: uuid,
@@ -95,7 +102,7 @@ export class GraphNodeElement extends BaseElement {
                 details,
             },
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
@@ -112,43 +119,52 @@ export class GraphNodeElement extends BaseElement {
      * 没有开始连接的时候执行无效
      */
     stopConnect() {
-
+        const custom = new CustomEvent<InterruptConnectNodeDetail>('interrupt-connect-node', {
+            bubbles: false,
+            cancelable: false,
+            detail: {},
+        });
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
      * 选中当前节点
      */
     select() {
-        const custom = new CustomEvent('select-graph-node', {
-            bubbles: true,
-            cancelable: true,
-            detail: {},
+        const custom = new CustomEvent<SelectNodeDetail>('select-node', {
+            bubbles: false,
+            cancelable: false,
+            detail: {
+                target: this,
+            },
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
      * 取消选中当前节点
      */
     unselect() {
-        const custom = new CustomEvent('unselect-graph-node', {
-            bubbles: true,
-            cancelable: true,
-            detail: {},
+        const custom = new CustomEvent<UnselectNodeDetail>('unselect-node', {
+            bubbles: false,
+            cancelable: false,
+            detail: {
+                target: this,
+            },
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**
      * 清空所有选中的元素
      */
     clearOtherSelected() {
-        const custom = new CustomEvent('clear-select-graph-node', {
-            bubbles: true,
-            cancelable: true,
+        const custom = new CustomEvent<ClearSelectNodeDetail>('clear-select-node', {
+            bubbles: false,
+            cancelable: false,
             detail: {},
         });
-        this.dispatchEvent(custom);
+        (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }
 
     /**

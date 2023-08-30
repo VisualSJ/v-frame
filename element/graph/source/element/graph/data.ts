@@ -1,6 +1,6 @@
 'use strict';
 
-import { PathParamRole, LineInfo, NodeInfo } from '../interface';
+import type { PathParamRole, LineInfo, NodeInfo } from '../../interface';
 
 /**
  * 连接点计算方式

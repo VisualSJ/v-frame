@@ -2,7 +2,7 @@
 
 export { GraphElement } from './element';
 
-export type { ParamConnectData } from './element/data';
+export type { ParamConnectData } from './element/graph/data';
 
 export { registerNode, queryNode, registerLine, queryLine, registerGraphOption } from './manager';
 

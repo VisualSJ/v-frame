@@ -1,7 +1,7 @@
 'use strict';
 
 import { LineInfo, NodeInfo, GraphOption } from './interface';
-import type { ParamConnectData } from './element/data';
+import type { ParamConnectData } from './element/graph/data';
 import type { GraphNodeElement } from './element/graph-node';
 import { EventEmmiter } from './event';
 
