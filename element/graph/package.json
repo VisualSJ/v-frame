@@ -1,6 +1,6 @@
 {
   "name": "@itharbors/ui-graph",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -13,6 +13,6 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@itharbors/ui-core": "^0.2.2"
+    "@itharbors/ui-core": "^0.2.3"
   }
 }
