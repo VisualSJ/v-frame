@@ -10,19 +10,30 @@ export class BaseElement extends HTMLElement {
     protected DEBUG = true;
 
     /**
-     * @description 监听 attribute 修改
+     * @description 监听 attribute 修改，需要继承的元素自己重写这个方法
      */
     static get observedAttributes(): string[] {
         return [];
     }
 
+    /**
+     * 元素 shadowDOM 内的 HTML
+     */
     protected get HTMLTemplate(): string {
         return '';
     };
+
+    /**
+     * 元素 shadowDOM 内的 STYLE
+     */
     protected get HTMLStyle(): string {
         return '';
     };
 
+    /**
+     * 默认数据，这份数据需要完整的给出定义
+     * 会在 getProperty 的时候自动识别类型
+     */
     get defaultData(): {
         [key: string]: object | number | string | boolean | null;
     } {
@@ -45,7 +56,7 @@ export class BaseElement extends HTMLElement {
         return this.data.setProperty(key, value);
     }
 
-    dispatch(eventName: string, options?: EventInit) {
+    dispatch<T>(eventName: string, options?: EventInit & { detail: T }) {
         const targetOptions = {
             bubbles: true,
             cancelable: true,
@@ -53,7 +64,7 @@ export class BaseElement extends HTMLElement {
         if (options) {
             Object.assign(targetOptions, options);
         }
-        const event = new CustomEvent(eventName, targetOptions);
+        const event = new CustomEvent<T>(eventName, targetOptions);
         this.dispatchEvent(event);
     }
 
