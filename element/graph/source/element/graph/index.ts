@@ -6,7 +6,18 @@ import { registerElement, BaseElement, style } from '@itharbors/ui-core';
 import { generateUUID, queryParamInfo } from '../utils';
 import { renderMesh, renderLines, renderNodes, bindEventListener, resizeCanvas, nodeElementMap } from './utils';
 import { queryGraphFliter, queryGraphOption, eventEmmiter } from '../../manager';
-import { UnselectLineDetail, ConnectNodeDetail } from '../event-interface';
+import {
+    UnselectLineDetail,
+    ConnectNodeDetail,
+
+    NodeAddedDetail,
+    NodeRemovedDetail,
+    NodeChangedDetail,
+
+    LineAddedDetail,
+    LineRemovedDetail,
+    LineChangedDetail,
+} from '../event-interface';
 
 export class GraphElement extends BaseElement {
     static get observedAttributes(): string[] {
@@ -78,6 +89,94 @@ export class GraphElement extends BaseElement {
     }
 
     /**
+     * 添加一个 node 数据
+     * @param node
+     * @param id
+     */
+    addNode(node: NodeInfo, id?: string) {
+        const uuid: string = id || generateUUID();
+        const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
+        nodes[uuid] = node;
+        this.data.emitProperty('nodes', nodes, nodes);
+
+        this.dispatch<NodeAddedDetail>('node-added', {
+            detail: {
+                node,
+            },
+        });
+    }
+
+    /**
+     * 删除一个 Node
+     * @param id
+     */
+    removeNode(id: string) {
+        const nodes = this.getProperty('nodes');
+        const node = nodes[id];
+        if (!node) {
+            return;
+        }
+        delete nodes[id];
+        this.data.emitProperty('nodes', nodes, nodes);
+
+        this.dispatch<NodeRemovedDetail>('node-removed', {
+            detail: {
+                node,
+            },
+        });
+    }
+
+    /**
+     * 获取一个节点的 details
+     * @param id 
+     */
+    getNodeDetai(id: string) {
+        const nodes = this.getProperty('nodes');
+        const node = nodes[id];
+        return node ? node.details : '';
+    }
+
+    /**
+     * 设置一个节点的 details
+     * @param id 
+     * @param details 
+     * @returns 
+     */
+    setNodeDetai(id: string, details: { [key: string]: any }) {
+        const nodes = this.getProperty('nodes');
+        const node = nodes[id];
+        if (!node) {
+            return;
+        }
+        node.details = details;
+        this.dispatch<NodeChangedDetail>('node-changed', {
+            detail: {
+                node,
+            },
+        });
+    }
+
+    /**
+     * 获取一个节点信息
+     * @param id
+     * @returns
+     */
+    getNode(id: string) {
+        const nodes = this.data.getProperty('nodes');
+        return nodes[id];
+    }
+
+    /**
+     * 查询一个节点的 Element
+     * @param id 
+     * @returns 
+     */
+    queryNodeElement(id: string) {
+        const $node = this.querySelector(`#nodes > v-graph-node[node-uuid="${id}"]`);
+        return $node;
+    }
+
+    /**
      * 生成一个空的 line 数据
      * @param type
      */
@@ -92,26 +191,6 @@ export class GraphElement extends BaseElement {
                 node: '',
             },
         };
-    }
-
-    /**
-     * 清空数据
-     */
-    clear() {
-        this.setProperty('nodes', []);
-        this.setProperty('lines', []);
-    }
-
-    /**
-     * 添加一个 node 数据
-     * @param node
-     * @param id
-     */
-    addNode(node: NodeInfo, id?: string) {
-        const uuid: string = id || generateUUID();
-        const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
-        nodes[uuid] = node;
-        this.data.emitProperty('nodes', nodes, nodes);
     }
 
     /**
@@ -130,41 +209,62 @@ export class GraphElement extends BaseElement {
             lines[id || generateUUID()] = line;
             this.data.emitProperty('lines', lines, lines);
 
-            const customEvent = new CustomEvent('line-added', {
-                detail: { line, },
+            this.dispatch<LineAddedDetail>('line-added', {
+                detail: {
+                    line,
+                },
             });
-            this.dispatchEvent(customEvent);
         }
     }
 
     /**
-     * 获取一个节点信息
+     * 删除一条连接线
      * @param id
-     * @returns
      */
-    getNode(id: string) {
-        const nodes = this.data.getProperty('nodes');
-        return nodes[id];
+    removeLine(id: string) {
+        const lines = this.getProperty('lines');
+        const line = lines[id];
+        if (!line) {
+            return;
+        }
+        delete lines[id];
+        this.data.emitProperty('lines', lines, lines);
+
+        this.dispatch<LineRemovedDetail>('line-removed', {
+            detail: {
+                line,
+            },
+        });
     }
 
     /**
-     * 删除一个 Node
-     * @param id
-     */
-    removeNode(id: string) {
-        const nodes = this.getProperty('nodes');
-        delete nodes[id];
-        this.data.emitProperty('nodes', nodes, nodes);
-    }
-
-    /**
-     * 查询一个节点的 Element
+     * 获取一个线段的 details
      * @param id 
      * @returns 
      */
-    queryNodeElement(id: string) {
-        const $node = this.querySelector(`#nodes > v-graph-node[node-uuid="${id}"]`);
-        return $node;
+    getLineDetails(id: string) {
+        const lines = this.getProperty('lines');
+        const line = lines[id];
+        return line ? line.details : '';
+    }
+
+    /**
+     * 设置一个线段的 details
+     * @param id 
+     * @returns 
+     */
+    setLineDetail(id: string, details: { [key: string]: any }) {
+        const lines = this.getProperty('lines');
+        const line = lines[id];
+        if (!line) {
+            return;
+        }
+        line.details = details;
+        this.dispatch<LineChangedDetail>('line-changed', {
+            detail: {
+                line,
+            },
+        });
     }
 
     /**
@@ -178,21 +278,6 @@ export class GraphElement extends BaseElement {
     }
 
     /**
-     * 删除一条连接线
-     * @param id
-     */
-    removeLine(id: string) {
-        const lines = this.getProperty('lines');
-        const line = lines[id];
-        delete lines[id];
-        this.data.emitProperty('lines', lines, lines);
-        const customEvent = new CustomEvent('line-removed', {
-            detail: { line, },
-        });
-        this.dispatchEvent(customEvent);
-    }
-
-    /**
      * 查询一个节点的 Element
      * @param id 
      * @returns 
@@ -200,6 +285,14 @@ export class GraphElement extends BaseElement {
     queryLineElement(id: string) {
         const $line = this.querySelector(`#lines > g[line-uuid="${id}"]`);
         return $line;
+    }
+
+    /**
+     * 清空数据
+     */
+    clear() {
+        this.setProperty('nodes', []);
+        this.setProperty('lines', []);
     }
 
     /**

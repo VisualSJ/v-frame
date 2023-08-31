@@ -1,6 +1,9 @@
 'use strict';
 
-import { GraphNodeElement } from ".";
+import { GraphNodeElement } from './index';
+import { LineInfo, NodeInfo } from '../interface';
+
+// ---- Node Private
 
 export interface SelectNodeDetail {
     target: GraphNodeElement;
@@ -35,8 +38,29 @@ export interface InterruptConnectNodeDetail {
     
 }
 
+// ---- Node Public
 
-/////
+export interface NodeAddedDetail {
+    node: NodeInfo;
+}
+
+export interface NodeRemovedDetail {
+    node: NodeInfo;
+}
+
+export interface NodeChangedDetail {
+    node: NodeInfo;
+}
+
+export interface NodeSelectedDetail {
+
+}
+
+export interface NodeUnselectedDetail {
+
+}
+
+// ---- Line
 
 export interface SelectLineDetail {
     target: SVGGElement;
@@ -44,4 +68,26 @@ export interface SelectLineDetail {
 
 export interface UnselectLineDetail {
     target: SVGGElement;
+}
+
+// ---- Node Public
+
+export interface LineAddedDetail {
+    line: LineInfo;
+}
+
+export interface LineRemovedDetail {
+    line: LineInfo;
+}
+
+export interface LineChangedDetail {
+    line: LineInfo;
+}
+
+export interface LineSelectedDetail {
+
+}
+
+export interface LineUnselectedDetail {
+
 }

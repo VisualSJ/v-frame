@@ -9,3 +9,12 @@ export { registerNode, queryNode, registerLine, queryLine, registerGraphOption }
 export * from './event';
 
 export * from './interface';
+
+export {
+    NodeAddedDetail,
+    LineAddedDetail,
+    NodeChangedDetail,
+    LineChangedDetail,
+    NodeRemovedDetail,
+    LineRemovedDetail,
+} from './element/event-interface';
