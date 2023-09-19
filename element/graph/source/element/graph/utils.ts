@@ -8,7 +8,7 @@ import type { BaseElement } from '@itharbors/ui-core';
 import { getParamElementOffset } from '../utils';
 import { ParamConnectData } from './data';
 import { queryLine } from '../../manager';
-import { MoveNodeDetail, SelectLineDetail, UnselectLineDetail, SelectNodeDetail, UnselectNodeDetail, InterruptMoveNodeDetail } from '../event-interface';
+import { MoveNodeDetail, SelectLineDetail, UnselectLineDetail, SelectNodeDetail, UnselectNodeDetail, InterruptMoveNodeDetail, LineSelectedDetail, LineUnselectedDetail, NodeSelectedDetail, NodeUnselectedDetail } from '../event-interface';
 
 export const nodeElementMap: WeakMap<NodeInfo, GraphNodeElement> = new WeakMap();
 
@@ -95,14 +95,22 @@ export function renderMesh($elem: GraphElement, ctx: CanvasRenderingContext2D, b
     }
 };
 
+let renderNodesLock = false;
+const refreshFlag = new Set();
 export function renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale: number) {
+    if (renderNodesLock) {
+        return;
+    }
+    renderNodesLock = true;
+    requestAnimationFrame(() => {
+        renderNodesLock = false;
+    });
     const $nodes = $elem.querySelectorAll('#nodes > v-graph-node');
     const nodes = $elem.data.getProperty('nodes');
     const graphType = $elem.data.getAttribute('type') || 'default';
 
     const $root = $elem.querySelector('#nodes')!;
 
-    const refreshFlag = new Set();
     // 循环已有的 HTML 节点
     for (let i = 0; i < $nodes.length; i++) {
         const $node = $nodes[i] as BaseElement;
@@ -148,8 +156,8 @@ export function renderNodes($elem: GraphElement, offset: {x: number, y: number},
             renderNodes($elem, offset, scale);
             renderLines($elem, offset, scale);
         });
-
     }
+    refreshFlag.clear();
 };
 
 export function renderLine(graphType: string, $line: SVGGElement, line: LineInfo, lines: { [key: string]: LineInfo | undefined }, nodes: { [key: string]: NodeInfo | undefined }, scale: number) {
@@ -195,12 +203,25 @@ export function renderLine(graphType: string, $line: SVGGElement, line: LineInfo
     lineAdapter.updateSVGPath($line, scale, d, line, lines);
 };
 
+let renderLinesLock = false;
 export function renderLines($elem: GraphElement, offset: {x: number, y: number }, scale: number) {
+    const $root = $elem.querySelector('#lines')!;
+    if ($root.hasAttribute('hidden')) {
+        return;
+    }
+
+    if (renderLinesLock) {
+        return;
+    }
+    renderLinesLock = true;
+    requestAnimationFrame(() => {
+        renderLinesLock = false;
+    });
+
     const graphType = $elem.data.getAttribute('type') || 'default';
     const lines = $elem.data.getProperty('lines');
     const nodes = $elem.data.getProperty('nodes');
     const $lines = $elem.querySelectorAll('#lines > g[line-uuid]');
-    const $root = $elem.querySelector('#lines')!;
 
     const refreshFlag = new Set();
     for (let i = 0; i < $lines.length; i++) {
@@ -264,11 +285,35 @@ export function bindEventListener($elem: GraphElement) {
     function selectLine($g: SVGGElement) {
         $g.setAttribute('selected', '');
         $elem.__selectLines__.add($g);
+        const lineMap = $elem.getProperty('lines');
+        const uuid = $g.getAttribute('line-uuid');
+        if (uuid) {
+            const line = lineMap[uuid];
+            line && $elem.dispatch<LineSelectedDetail>('line-selected', {
+                cancelable: false,
+                bubbles: false,
+                detail: {
+                    line,
+                },
+            });
+        }
     }
     function unselectLine($g: SVGGElement) {
         if ($g.hasAttribute('selected')) {
             $g.removeAttribute('selected');
             $elem.__selectLines__.delete($g);
+            const lineMap = $elem.getProperty('lines');
+            const uuid = $g.getAttribute('line-uuid');
+            if (uuid) {
+                const line = lineMap[uuid];
+                line && $elem.dispatch<LineUnselectedDetail>('line-unselected', {
+                    cancelable: false,
+                    bubbles: false,
+                    detail: {
+                        line,
+                    },
+                });
+            }
         }
     }
 
@@ -296,11 +341,37 @@ export function bindEventListener($elem: GraphElement) {
         const cEvent = event as CustomEvent<SelectNodeDetail>;
         const $node = cEvent.detail.target;
         $node.setProperty('selected', true);
+
+        const nodeMap = $elem.getProperty('nodes');
+        const uuid = $node.getAttribute('node-uuid');
+        if (uuid) {
+            const node = nodeMap[uuid];
+            node && $elem.dispatch<NodeSelectedDetail>('node-selected', {
+                cancelable: false,
+                bubbles: false,
+                detail: {
+                    node,
+                },
+            });
+        }
     });
     $elem.shadowRoot.addEventListener('unselect-node', (event) => {
         const cEvent = event as CustomEvent<UnselectNodeDetail>;
         const $node = cEvent.detail.target;
         $node.setProperty('selected', false);
+
+        const nodeMap = $elem.getProperty('nodes');
+        const uuid = $node.getAttribute('node-uuid');
+        if (uuid) {
+            const node = nodeMap[uuid];
+            node && $elem.dispatch<NodeUnselectedDetail>('node-unselected', {
+                cancelable: false,
+                bubbles: false,
+                detail: {
+                    node,
+                },
+            });
+        }
     });
     $elem.shadowRoot.addEventListener('clear-select-node', (event) => {
         $elem.clearAllBlockSelected();
@@ -422,13 +493,19 @@ export function bindEventListener($elem: GraphElement) {
         const cEvent = event as CustomEvent<MoveNodeDetail>;
         const $nodeInfoList = $elem.getSelectedNodeList();
         let t = false;
+        let at = false;
+
+        const $root = $elem.querySelector('#lines')!;
+        $root.setAttribute('hidden', '');
+
+        const scale = $elem.getProperty('scale');
         const mousemove = (event: MouseEvent) => {
             if (!t) {
+                const scale = $elem.getProperty('scale');
                 $nodeInfoList.forEach((info) => {
                     const $node = nodeElementMap.get(info.target)!;
                     $node.setAttribute('moving', '');
                     const position = $node.getProperty('position');
-                    const scale = $node.getProperty('scale');
                     const moveStartPoint = $node.getProperty('moveStartPoint');
                     moveStartPoint.x = position.x * scale;
                     moveStartPoint.y = position.y * scale;
@@ -438,28 +515,31 @@ export function bindEventListener($elem: GraphElement) {
                 t = true;
             }
 
-            $nodeInfoList.forEach((info) => {
-                const $node = nodeElementMap.get(info.target)!;
-                const scale = $node.getProperty('scale');
-                const moveStartPoint = $node.getProperty('moveStartPoint');
-                
-                const offset = {
-                    x: event.pageX - moveStartPoint.pageX,
-                    y: event.pageY - moveStartPoint.pageY,
-                };
-                const reOffset = {
-                    x: (moveStartPoint.x + offset.x) / scale,
-                    y: (moveStartPoint.y + offset.y) / scale,
-                };
-                $node.setProperty('position', reOffset);
+            if (at === true) {
+                return;
+            }
+            at = true;
+            requestAnimationFrame(() => {
+                at = false;
+                const scale = $elem.getProperty('scale');
+                $nodeInfoList.forEach((info) => {
+                    const $node = nodeElementMap.get(info.target)!;
+                    const moveStartPoint = $node.getProperty('moveStartPoint');
+                    const reOffset = {
+                        x: (moveStartPoint.x + (event.pageX - moveStartPoint.pageX)) / scale,
+                        y: (moveStartPoint.y + (event.pageY - moveStartPoint.pageY)) / scale,
+                    };
+                    $node.setProperty('position', reOffset);
+                });
             });
         }
         const mouseup = (event: MouseEvent) => {
+            const scale = $elem.getProperty('scale');
+            const offset = $elem.getProperty('offset');
             if (t) {
                 $nodeInfoList.forEach((info) => {
                     const $node = nodeElementMap.get(info.target)!;
                     $node.setAttribute('moving', '');
-                    const scale = $node.getProperty('scale');
                     const moveStartPoint = $node.getProperty('moveStartPoint');
                     
                     const offset = {
@@ -474,6 +554,10 @@ export function bindEventListener($elem: GraphElement) {
                 });
             }
             stopmove();
+
+            const $root = $elem.querySelector('#lines')!;
+            $root.removeAttribute('hidden');
+            renderLines($elem, offset, scale);
         }
         const stopmove = (event?: Event) => {
             const cEvent = event as CustomEvent<InterruptMoveNodeDetail> | undefined;

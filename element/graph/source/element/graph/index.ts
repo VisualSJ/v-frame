@@ -7,16 +7,20 @@ import { generateUUID, queryParamInfo } from '../utils';
 import { renderMesh, renderLines, renderNodes, bindEventListener, resizeCanvas, nodeElementMap } from './utils';
 import { queryGraphFliter, queryGraphOption, eventEmmiter } from '../../manager';
 import {
-    UnselectLineDetail,
     ConnectNodeDetail,
 
     NodeAddedDetail,
     NodeRemovedDetail,
     NodeChangedDetail,
 
+    NodeUnselectedDetail,
+
     LineAddedDetail,
     LineRemovedDetail,
     LineChangedDetail,
+
+    SelectLineDetail,
+    UnselectLineDetail,
 } from '../event-interface';
 
 export class GraphElement extends BaseElement {
@@ -343,14 +347,14 @@ export class GraphElement extends BaseElement {
             if ($g.hasAttribute('selected')) {
                 $g.removeAttribute('selected');
                 this.__selectLines__.delete($g);
-                const custom = new CustomEvent<UnselectLineDetail>('unselect-line', {
+                const custom = new CustomEvent<SelectLineDetail>('select-line', {
                     bubbles: false,
                     cancelable: false,
                     detail: {
                         target: $g,
                     },
                 });
-                ($g.getRootNode() as ShadowRoot).dispatchEvent(custom);
+                this.shadowRoot.dispatchEvent(custom);
             }
         });
     }
@@ -365,6 +369,14 @@ export class GraphElement extends BaseElement {
             const $node = nodeElementMap.get(node);
             if ($node) {
                 $node.setProperty('selected', false);
+                const node = nodes[id];
+                $node.dispatch<NodeUnselectedDetail>('node-unselected', {
+                    cancelable: false,
+                    bubbles: false,
+                    detail: {
+                        node,
+                    },
+                });
             }
         }
     }
@@ -651,6 +663,10 @@ ${style.line}
     top: 50%;
     left: 50%;
     overflow: visible;
+    transition: opacity 0.1s;
+}
+#lines[hidden] {
+    opacity: 0;
 }
 
 v-graph-node {

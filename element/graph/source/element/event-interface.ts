@@ -85,9 +85,9 @@ export interface LineChangedDetail {
 }
 
 export interface LineSelectedDetail {
-
+    line: LineInfo;
 }
 
 export interface LineUnselectedDetail {
-
+    line: LineInfo;
 }
