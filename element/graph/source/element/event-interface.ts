@@ -49,6 +49,7 @@ export interface NodeRemovedDetail {
 }
 
 export interface NodeChangedDetail {
+    id: string;
     node: NodeInfo;
 }
 

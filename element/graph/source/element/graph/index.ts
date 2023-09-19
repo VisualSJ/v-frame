@@ -21,6 +21,7 @@ import {
 
     SelectLineDetail,
     UnselectLineDetail,
+    LineUnselectedDetail,
 } from '../event-interface';
 
 export class GraphElement extends BaseElement {
@@ -155,6 +156,7 @@ export class GraphElement extends BaseElement {
         node.details = details;
         this.dispatch<NodeChangedDetail>('node-changed', {
             detail: {
+                id,
                 node,
             },
         });
@@ -343,15 +345,17 @@ export class GraphElement extends BaseElement {
      * 清空所选的线段
      */
     clearAllLineSelected() {
+        const lines = this.getProperty('lines');
         this.__selectLines__.forEach(($g) => {
             if ($g.hasAttribute('selected')) {
                 $g.removeAttribute('selected');
                 this.__selectLines__.delete($g);
-                const custom = new CustomEvent<SelectLineDetail>('select-line', {
+                const uuid = $g.getAttribute('line-uuid')!;
+                const custom = new CustomEvent<LineUnselectedDetail>('line-unselected', {
                     bubbles: false,
                     cancelable: false,
                     detail: {
-                        target: $g,
+                        line: lines[uuid]!,
                     },
                 });
                 this.shadowRoot.dispatchEvent(custom);
@@ -663,7 +667,7 @@ ${style.line}
     top: 50%;
     left: 50%;
     overflow: visible;
-    transition: opacity 0.1s;
+    transition: opacity 0.3s;
 }
 #lines[hidden] {
     opacity: 0;

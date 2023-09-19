@@ -1,6 +1,7 @@
 'use strict';
 
-export { GraphElement } from './element';
+export type { GraphElement } from './element';
+export type { GraphNodeElement } from './element';
 
 export type { ParamConnectData } from './element/graph/data';
 
@@ -10,7 +11,7 @@ export * from './event';
 
 export * from './interface';
 
-export {
+export type {
     NodeAddedDetail,
     LineAddedDetail,
     NodeChangedDetail,
