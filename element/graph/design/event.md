@@ -16,6 +16,7 @@
 |----|----|----|
 | node-added               | 通知 | 新增一个节点之后发出的消息
 | node-changed             | 通知 | 修改一个节点之后发出的消息
+| node-position-changed    | 通知 | 修改一个节点之后发出的消息
 | node-removed             | 通知 | 删除一个节点之后发出的消息
 | node-selected            | 通知 | 一个节点被选中的时候触发
 | node-unselected          | 通知 | 一个节点被取消选中的时候触发

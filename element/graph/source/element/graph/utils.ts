@@ -569,6 +569,7 @@ export function bindEventListener($elem: GraphElement) {
                 const $node = nodeElementMap.get(info.target)!;
                 $node.removeAttribute('moving');
             });
+            $elem.dispatch('node-position-changed');
         };
         document.addEventListener('mousemove', mousemove);
         document.addEventListener('mouseup', mouseup, true);
