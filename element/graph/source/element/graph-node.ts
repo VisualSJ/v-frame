@@ -130,12 +130,14 @@ export class GraphNodeElement extends BaseElement {
     /**
      * 选中当前节点
      */
-    select() {
+    select(option: Omit<SelectNodeDetail, 'target'>) {
         const custom = new CustomEvent<SelectNodeDetail>('select-node', {
             bubbles: false,
             cancelable: false,
             detail: {
                 target: this,
+                clearLines: option.clearLines,
+                clearNodes: option.clearNodes,
             },
         });
         (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
@@ -202,7 +204,11 @@ export class GraphNodeElement extends BaseElement {
                 if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
                     this.clearOtherSelected();
                 }
-                this.select();
+                const clear = event.metaKey || event.ctrlKey;
+                this.select({
+                    clearLines: !clear,
+                    clearNodes: !clear,
+                });
             }
             this.startMove();
         });

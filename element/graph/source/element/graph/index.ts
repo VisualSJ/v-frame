@@ -64,6 +64,18 @@ export class GraphElement extends BaseElement {
 
     __selectLines__: Set<SVGGElement> = new Set;
 
+    dispatch<T>(eventName: string, options?: EventInit & { detail: T }) {
+        const targetOptions = {
+            bubbles: false,
+            cancelable: false,
+        };
+        if (options) {
+            Object.assign(targetOptions, options);
+        }
+        const event = new CustomEvent<T>(eventName, targetOptions);
+        this.dispatchEvent(event);
+    }
+
     /**
      * 坐标转换，传入一个元素上获取的坐标，转换成 graph 内的一个坐标值
      * @param x 
@@ -102,12 +114,14 @@ export class GraphElement extends BaseElement {
         const uuid: string = id || generateUUID();
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         nodes[uuid] = node;
-        this.data.emitProperty('nodes', nodes, nodes);
 
-        this.dispatch<NodeAddedDetail>('node-added', {
-            detail: {
-                node,
-            },
+        requestAnimationFrame(() => {
+            this.data.emitProperty('nodes', nodes, nodes);
+            this.dispatch<NodeAddedDetail>('node-added', {
+                detail: {
+                    node,
+                },
+            });
         });
     }
 
@@ -213,12 +227,13 @@ export class GraphElement extends BaseElement {
         const output = queryParamInfo(this, line.output.node, line.output.param);
         if (lineFilter!(nodes, lines, line, input, output)) {
             lines[id || generateUUID()] = line;
-            this.data.emitProperty('lines', lines, lines);
-
-            this.dispatch<LineAddedDetail>('line-added', {
-                detail: {
-                    line,
-                },
+            requestAnimationFrame(() => {
+                this.data.emitProperty('lines', lines, lines);
+                this.dispatch<LineAddedDetail>('line-added', {
+                    detail: {
+                        line,
+                    },
+                });
             });
         }
     }

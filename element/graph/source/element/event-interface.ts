@@ -7,6 +7,8 @@ import { LineInfo, NodeInfo } from '../interface';
 
 export interface SelectNodeDetail {
     target: GraphNodeElement;
+    clearLines: boolean;
+    clearNodes: boolean;
 }
 
 export interface UnselectNodeDetail {

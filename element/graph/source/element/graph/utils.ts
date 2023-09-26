@@ -326,6 +326,10 @@ export function bindEventListener($elem: GraphElement) {
     // 处理选中 line 的情况
     $elem.shadowRoot.addEventListener('select-line', (event) => {
         const cEvent = event as CustomEvent<SelectLineDetail>;
+        if (!(event as MouseEvent).metaKey && !(event as MouseEvent).ctrlKey) {
+            $elem.clearAllBlockSelected();
+            $elem.clearAllLineSelected();
+        }
         selectLine(cEvent.detail.target);
     });
     $elem.shadowRoot.addEventListener('unselect-line', (event) => {
@@ -341,6 +345,13 @@ export function bindEventListener($elem: GraphElement) {
         const cEvent = event as CustomEvent<SelectNodeDetail>;
         const $node = cEvent.detail.target;
         $node.setProperty('selected', true);
+
+        if (cEvent.detail.clearLines) {
+            $elem.clearAllLineSelected();
+        }
+        if (cEvent.detail.clearNodes) {
+            $elem.clearAllBlockSelected();
+        }
 
         const nodeMap = $elem.getProperty('nodes');
         const uuid = $node.getAttribute('node-uuid');
