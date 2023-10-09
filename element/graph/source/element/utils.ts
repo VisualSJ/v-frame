@@ -2,6 +2,10 @@
 
 import type { PathParamRole } from '../interface';
 
+/**
+ * 生成一个临时的 ID
+ * @returns 
+ */
 export function generateUUID() {
     return 't_' + Date.now() + (Math.random() + '').substring(10);
 }
@@ -30,6 +34,13 @@ export function getParamElementOffset($node: HTMLElement, selector: string, scal
     };
 }
 
+/**
+ * 在元素里找到 param 的一些信息
+ * @param $root 
+ * @param node 
+ * @param param 
+ * @returns 
+ */
 export function queryParamInfo($root: HTMLElement, node: string, param?: string) {
     const $node = $root.querySelector(`#nodes > v-graph-node[node-uuid="${node}"]`);
     if (!$node) {
@@ -45,4 +56,32 @@ export function queryParamInfo($root: HTMLElement, node: string, param?: string)
         name: $param.getAttribute('name'),
         role: $param.getAttribute('role'),
     };
+}
+
+/**
+ * 基于 requestAnimtionFrame 的节流
+ * @param func 
+ * @returns 
+ */
+export function requestAnimtionFrameThrottling<T extends (...args: any[]) => any>(func: T): T {
+    let exec = false;
+    let wait: any[] | null = null;
+
+    const handle = async function(...args: any[]) {
+        if (exec) {
+            wait = args;
+            return;
+        }
+        exec = true;
+        await func(...args);
+        requestAnimationFrame(() => {
+            exec = false;
+            if (wait) {
+                handle(...wait);
+                wait = null;
+            }
+        });
+    } as T;
+
+    return handle;
 }

@@ -5,7 +5,7 @@ import type { GraphElement } from '../index';
 import type { NodeInfo, LineInfo, GraphOption } from '../../interface';
 import type { BaseElement } from '@itharbors/ui-core';
 
-import { getParamElementOffset } from '../utils';
+import { getParamElementOffset, requestAnimtionFrameThrottling } from '../utils';
 import { ParamConnectData } from './data';
 import { queryLine } from '../../manager';
 import { MoveNodeDetail, SelectLineDetail, UnselectLineDetail, SelectNodeDetail, UnselectNodeDetail, InterruptMoveNodeDetail, LineSelectedDetail, LineUnselectedDetail, NodeSelectedDetail, NodeUnselectedDetail } from '../event-interface';
@@ -95,16 +95,9 @@ export function renderMesh($elem: GraphElement, ctx: CanvasRenderingContext2D, b
     }
 };
 
-let renderNodesLock = false;
 const refreshFlag = new Set();
-export function renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale: number) {
-    if (renderNodesLock) {
-        return;
-    }
-    renderNodesLock = true;
-    requestAnimationFrame(() => {
-        renderNodesLock = false;
-    });
+export const renderNodes = requestAnimtionFrameThrottling(_renderNodes);
+function _renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale: number) {
     const $nodes = $elem.querySelectorAll('#nodes > v-graph-node');
     const nodes = $elem.data.getProperty('nodes');
     const graphType = $elem.data.getAttribute('type') || 'default';
@@ -203,20 +196,12 @@ export function renderLine(graphType: string, $line: SVGGElement, line: LineInfo
     lineAdapter.updateSVGPath($line, scale, d, line, lines);
 };
 
-let renderLinesLock = false;
-export function renderLines($elem: GraphElement, offset: {x: number, y: number }, scale: number) {
+export const renderLines = requestAnimtionFrameThrottling(_renderLines);
+function _renderLines($elem: GraphElement, offset: {x: number, y: number }, scale: number) {
     const $root = $elem.querySelector('#lines')!;
     if ($root.hasAttribute('hidden')) {
         return;
     }
-
-    if (renderLinesLock) {
-        return;
-    }
-    renderLinesLock = true;
-    requestAnimationFrame(() => {
-        renderLinesLock = false;
-    });
 
     const graphType = $elem.data.getAttribute('type') || 'default';
     const lines = $elem.data.getProperty('lines');

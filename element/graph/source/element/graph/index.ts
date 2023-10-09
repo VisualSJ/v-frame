@@ -23,6 +23,7 @@ import {
     UnselectLineDetail,
     LineUnselectedDetail,
 } from '../event-interface';
+import { requestAnimtionFrameThrottling } from '../utils';
 
 export class GraphElement extends BaseElement {
     static get observedAttributes(): string[] {
@@ -465,12 +466,12 @@ export class GraphElement extends BaseElement {
         // 绕过线段检查
         lines['connect-param-line'] = line;
         this.data.emitProperty('lines', lines, lines);
-        this.__connect__event__ = (event: MouseEvent) => {
+        this.__connect__event__ = requestAnimtionFrameThrottling((event: MouseEvent) => {
             const scale = this.data.getProperty('scale');
             fake.position.x =  (event.offsetX - calibration.x - offset.x) / scale;
             fake.position.y =  (event.offsetY - calibration.y - offset.y) / scale;
             this.data.emitProperty('lines', lines, lines);
-        };
+        });
         this.addEventListener('mousemove', this.__connect__event__);
     }
 
@@ -500,12 +501,7 @@ export class GraphElement extends BaseElement {
         const $canvas = this.querySelector('canvas')! as HTMLCanvasElement;
         const ctx = $canvas.getContext('2d')!;
 
-        let refreshFrameLock = false;
-        const refresh = () => {
-            if (refreshFrameLock) {
-                return;
-            }
-            refreshFrameLock = true;
+        const refresh = requestAnimtionFrameThrottling(() => {
             const box = this.getBoundingClientRect();
             const offset = this.data.getProperty('offset');
             const scale = this.data.getProperty('scale');
@@ -516,10 +512,7 @@ export class GraphElement extends BaseElement {
             renderMesh(this, ctx, box, offset, scale, option);
             renderNodes(this, offset, scale);
             renderLines(this, offset, scale);
-            requestAnimationFrame(() => {
-                refreshFrameLock = false;
-            });
-        }
+        });
 
         const $domBox = this.querySelector('#dom-box')!;
         // 监听 scale 变化
