@@ -63,23 +63,40 @@ export function queryParamInfo($root: HTMLElement, node: string, param?: string)
  * @param func 
  * @returns 
  */
+// export function requestAnimtionFrameThrottling<T extends (...args: any[]) => any>(func: T): T {
+//     let exec = false;
+//     let wait: any[] | null = null;
+
+//     const handle = async function(...args: any[]) {
+//         if (exec) {
+//             wait = args;
+//             return;
+//         }
+//         exec = true;
+//         await func(...args);
+//         requestAnimationFrame(() => {
+//             exec = false;
+//             if (wait) {
+//                 handle(...wait);
+//                 wait = null;
+//             }
+//         });
+//     } as T;
+
+//     return handle;
+// }
 export function requestAnimtionFrameThrottling<T extends (...args: any[]) => any>(func: T): T {
-    let exec = false;
     let wait: any[] | null = null;
 
     const handle = async function(...args: any[]) {
-        if (exec) {
+        if (wait) {
             wait = args;
             return;
         }
-        exec = true;
-        await func(...args);
+        wait = args;
         requestAnimationFrame(() => {
-            exec = false;
-            if (wait) {
-                handle(...wait);
-                wait = null;
-            }
+            func(...wait!);
+            wait = null;
         });
     } as T;
 

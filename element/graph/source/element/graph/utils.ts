@@ -117,7 +117,7 @@ function _renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale
         } else {
             // 更新已存在的节点内的数据
             $node.data.setAttribute('node-uuid', uuid);
-            $node.data.setProperty('scale', scale);
+            $node.data.setProperty('scale', Math.floor(scale * 100) / 100);
             $node.data.setProperty('graphType', graphType);
             $node.data.setProperty('type', node.type);
             $node.data.setProperty('position', node.position);
@@ -137,7 +137,7 @@ function _renderNodes($elem: GraphElement, offset: {x: number, y: number}, scale
         $root.appendChild($node);
 
         $node.data.setAttribute('node-uuid', uuid);
-        $node.data.setProperty('scale', scale);
+        $node.data.setProperty('scale', Math.floor(scale * 100) / 100);
         $node.data.setProperty('graphType', graphType);
         $node.data.setProperty('type', node.type);
         $node.data.setProperty('position', node.position);
@@ -448,6 +448,9 @@ export function bindEventListener($elem: GraphElement) {
                     y: event.pageY,
                 };
 
+                const $root = $elem.querySelector('#lines')!;
+                $root.setAttribute('hidden', '');
+
                 const mousemove = (event: MouseEvent) => {
                     start.x = event.pageX - point.x;
                     start.y = event.pageY - point.y;
@@ -458,6 +461,7 @@ export function bindEventListener($elem: GraphElement) {
                     $elem.data.setProperty('offset', reOffset);
                 }
                 const mouseup = (event: MouseEvent) => {
+                    $root.removeAttribute('hidden');
                     if (event.pageX !== point.x || event.pageY !== point.y) {
                         event.stopPropagation();
                         event.preventDefault();
@@ -481,7 +485,8 @@ export function bindEventListener($elem: GraphElement) {
         const delta = event.deltaY > 0 ? 0.05 : -0.05;
         let scale = $elem.data.getProperty('scale');
         scale += delta;
-        $elem.data.setProperty('scale', Math.min(2, Math.max(0.2, scale)));
+        scale = Math.min(2, Math.max(0.2, scale));
+        $elem.data.setProperty('scale', Math.floor(scale * 100) / 100);
     });
 
     // 拖拽节点

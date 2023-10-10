@@ -513,16 +513,28 @@ export class GraphElement extends BaseElement {
             renderNodes(this, offset, scale);
             renderLines(this, offset, scale);
         });
+        const refreshWithoutData = requestAnimtionFrameThrottling(() => {
+            const box = this.getBoundingClientRect();
+            const offset = this.data.getProperty('offset');
+            const scale = this.data.getProperty('scale');
+            const graphType = this.data.getAttribute('type') || 'default';
+            const option = queryGraphOption(graphType);
+            $domBox.setAttribute('style', `--offset-x: ${offset.x}px; --offset-y: ${offset.y}px; --scale: ${scale};`);
+            // resizeCanvas(this, $canvas, box);
+            renderMesh(this, ctx, box, offset, scale, option);
+            // renderNodes(this, offset, scale);
+            // renderLines(this, offset, scale);
+        });
 
         const $domBox = this.querySelector('#dom-box')!;
         // 监听 scale 变化
         this.data.addPropertyListener('scale', (scale) => {
-            refresh();
+            refreshWithoutData();
         });
 
         // 监听 offset 变化
         this.data.addPropertyListener('offset', (offset) => {
-            refresh();
+            refreshWithoutData();
         });
 
         eventEmmiter.addListener('node-registered', (graph, type) => {
@@ -608,7 +620,7 @@ export class GraphElement extends BaseElement {
             this.startConnect(lineType, node, param, paramDirection, details);
         });
 
-        refresh();
+        requestAnimationFrame(refresh);
 
         // 创建 ResizeObserver 实例
         const resizeObserver = new ResizeObserver(entries => {
