@@ -28,8 +28,8 @@ export function getParamElementOffset($node: HTMLElement, selector: string, scal
     const nodeBBound = $node.getBoundingClientRect();
     const paramBBound = $param.getBoundingClientRect();
     return {
-        x: ((paramBBound.width / 2 + paramBBound.x) - (nodeBBound.width / 2 + nodeBBound.x)) / scale,
-        y: ((paramBBound.height / 2 + paramBBound.y) - (nodeBBound.height / 2 + nodeBBound.y)) / scale,
+        x: ((paramBBound.width / 2 + paramBBound.x) - (nodeBBound.x)) / scale,
+        y: ((paramBBound.height / 2 + paramBBound.y) - (nodeBBound.y)) / scale,
         role: $param.getAttribute('role') as PathParamRole,
     };
 }

@@ -466,12 +466,12 @@ export class GraphElement extends BaseElement {
         // 绕过线段检查
         lines['connect-param-line'] = line;
         this.data.emitProperty('lines', lines, lines);
-        this.__connect__event__ = requestAnimtionFrameThrottling((event: MouseEvent) => {
+        this.__connect__event__ = (event: MouseEvent) => {
             const scale = this.data.getProperty('scale');
             fake.position.x =  (event.offsetX - calibration.x - offset.x) / scale;
             fake.position.y =  (event.offsetY - calibration.y - offset.y) / scale;
             this.data.emitProperty('lines', lines, lines);
-        });
+        };
         this.addEventListener('mousemove', this.__connect__event__);
     }
 
@@ -698,7 +698,7 @@ v-graph-node {
     top: 50%;
     left: 50%;
     transform-origin: center center;
-    transform: translateX(-50%) translateX(var(--offset-x)) translateY(-50%) translateY(var(--offset-y));
+    transform: translateX(0) translateX(var(--offset-x)) translateY(0) translateY(var(--offset-y));
     will-change: transform;
     contain: content;
 }
