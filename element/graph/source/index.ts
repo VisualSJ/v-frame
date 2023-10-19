@@ -15,6 +15,7 @@ export type {
     NodeAddedDetail,
     LineAddedDetail,
     NodeChangedDetail,
+    NodePositionChangedDetail,
     LineChangedDetail,
     NodeRemovedDetail,
     LineRemovedDetail,

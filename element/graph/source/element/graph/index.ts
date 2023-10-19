@@ -25,6 +25,85 @@ import {
 } from '../event-interface';
 import { requestAnimtionFrameThrottling } from '../utils';
 
+const HTML = /*html*/`
+<canvas id="meshes"></canvas>
+<div id="dom-box">
+    <svg id="lines"></svg>
+    <div id="nodes"></div>
+</div>
+<div class="select-box"></div>
+`;
+
+const STYLE = /*css*/`
+${style.solid}
+${style.line}
+:host {
+    --background-color: #1f1f1f;
+
+    display: block;
+
+    border-radius: calc(var(--size-radius) * 1px);
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+    background-color: var(--background-color);
+
+    position: relative;
+    overflow: hidden;
+
+    --offset-x: 0;
+    --offset-y: 0;
+}
+#meshes {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+#dom-box {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    transform: translate(var(--offset-x), var(--offset-y)) scale(var(--scale));
+    will-change: transform;
+}
+#nodes {
+
+}
+#lines {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    overflow: visible;
+    transition: opacity 0.3s;
+}
+#lines[hidden] {
+    opacity: 0;
+}
+
+v-graph-node {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    transform: translateX(0) translateX(var(--offset-x)) translateY(0) translateY(var(--offset-y));
+    will-change: transform;
+}
+v-graph-node[moving] {
+    z-index: 999;
+}
+
+.select-box {
+    position: absolute;
+    background: white;
+    opacity: 0.3;
+    width: 0;
+    height: 0;
+    top: 0;
+    left: 0;
+}
+`;
+
 export class GraphElement extends BaseElement {
     static get observedAttributes(): string[] {
         return [ 'type' ];
@@ -111,7 +190,7 @@ export class GraphElement extends BaseElement {
      * @param node
      * @param id
      */
-    addNode(node: NodeInfo, id?: string) {
+    addNode(node: NodeInfo, id?: string): string | undefined {
         const uuid: string = id || generateUUID();
         const nodes = this.getProperty('nodes') as { [key: string]: NodeInfo | undefined, };
         nodes[uuid] = node;
@@ -124,6 +203,7 @@ export class GraphElement extends BaseElement {
                 },
             });
         });
+        return uuid;
     }
 
     /**
@@ -144,16 +224,8 @@ export class GraphElement extends BaseElement {
                 node,
             },
         });
-    }
 
-    /**
-     * 获取一个节点的 details
-     * @param id 
-     */
-    getNodeDetai(id: string) {
-        const nodes = this.getProperty('nodes');
-        const node = nodes[id];
-        return node ? node.details : '';
+        return node;
     }
 
     /**
@@ -175,6 +247,16 @@ export class GraphElement extends BaseElement {
                 node,
             },
         });
+    }
+
+    /**
+     * 获取一个节点的 details
+     * @param id 
+     */
+    getNodeDetai(id: string) {
+        const nodes = this.getProperty('nodes');
+        const node = nodes[id];
+        return node ? node.details : '';
     }
 
     /**
@@ -219,24 +301,29 @@ export class GraphElement extends BaseElement {
      * @param line
      * @param id
      */
-    addLine(line: LineInfo, id?: string) {
-        const lines = this.getProperty('lines') as { [key: string]: LineInfo | undefined  };
-        const nodes = this.data.getProperty('nodes');
-        const graphType = this.data.getAttribute('type') || 'default';
-        const lineFilter = queryGraphFliter(graphType, 'lineFilter');
-        const input = queryParamInfo(this, line.input.node, line.input.param);
-        const output = queryParamInfo(this, line.output.node, line.output.param);
-        if (lineFilter!(nodes, lines, line, input, output)) {
-            lines[id || generateUUID()] = line;
+    addLine(line: LineInfo, id?: string): string | undefined {
+        const uuid = id || generateUUID();
+        // HACK 连续调用接口会导致报错，添加线段需要在节点绘制完成后才能正常渲染
+        setTimeout(() => {
             requestAnimationFrame(() => {
-                this.data.emitProperty('lines', lines, lines);
-                this.dispatch<LineAddedDetail>('line-added', {
-                    detail: {
-                        line,
-                    },
-                });
+                const lines = this.getProperty('lines') as { [key: string]: LineInfo | undefined  };
+                const nodes = this.data.getProperty('nodes');
+                const graphType = this.data.getAttribute('type') || 'default';
+                const lineFilter = queryGraphFliter(graphType, 'lineFilter');
+                const input = queryParamInfo(this, line.input.node, line.input.param);
+                const output = queryParamInfo(this, line.output.node, line.output.param);
+                if (lineFilter!(nodes, lines, line, input, output)) {
+                    lines[uuid] = line;
+                    this.data.emitProperty('lines', lines, lines);
+                    this.dispatch<LineAddedDetail>('line-added', {
+                        detail: {
+                            line,
+                        },
+                    });
+                }
             });
-        }
+        }, 20);
+        return uuid;
     }
 
     /**
@@ -257,17 +344,7 @@ export class GraphElement extends BaseElement {
                 line,
             },
         });
-    }
-
-    /**
-     * 获取一个线段的 details
-     * @param id 
-     * @returns 
-     */
-    getLineDetails(id: string) {
-        const lines = this.getProperty('lines');
-        const line = lines[id];
-        return line ? line.details : '';
+        return line;
     }
 
     /**
@@ -287,6 +364,17 @@ export class GraphElement extends BaseElement {
                 line,
             },
         });
+    }
+
+    /**
+     * 获取一个线段的 details
+     * @param id 
+     * @returns 
+     */
+    getLineDetails(id: string) {
+        const lines = this.getProperty('lines');
+        const line = lines[id];
+        return line ? line.details : '';
     }
 
     /**
@@ -426,7 +514,11 @@ export class GraphElement extends BaseElement {
                 delete line[dt].__fake;
                 line[dt].node = nodeUUID;
                 line[dt].param = paramName;
-                this.addLine(line);
+                this.dispatch('node-connected', {
+                    detail: {
+                        line,
+                    },
+                });
             } else {
                 this.data.emitProperty('lines', lines, lines);
             }
@@ -562,9 +654,12 @@ export class GraphElement extends BaseElement {
 
         // 监听 lines 变化
         this.data.addPropertyListener('lines', (lines) => {
-            const offset = this.data.getProperty('offset');
-            const scale = this.data.getProperty('scale');
-            renderLines(this, offset, scale);
+            requestAnimationFrame(() => {
+                debugger;
+                const offset = this.data.getProperty('offset');
+                const scale = this.data.getProperty('scale');
+                renderLines(this, offset, scale);
+            });
         });
 
         // 监听 selectBox 变化，框选检测
@@ -636,83 +731,3 @@ export class GraphElement extends BaseElement {
     }
 }
 registerElement('graph', GraphElement);
-
-const HTML = /*html*/`
-<canvas id="meshes"></canvas>
-<div id="dom-box">
-    <svg id="lines"></svg>
-    <div id="nodes"></div>
-</div>
-<div class="select-box"></div>
-`;
-
-const STYLE = /*css*/`
-${style.solid}
-${style.line}
-:host {
-    --background-color: #1f1f1f;
-
-    display: block;
-
-    border-radius: calc(var(--size-radius) * 1px);
-    border: 1px solid var(--border-color);
-    box-sizing: border-box;
-    background-color: var(--background-color);
-
-    position: relative;
-    overflow: hidden;
-
-    --offset-x: 0;
-    --offset-y: 0;
-}
-#meshes {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-}
-#dom-box {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    transform: translate(var(--offset-x), var(--offset-y)) scale(var(--scale));
-    will-change: transform;
-}
-#nodes {
-
-}
-#lines {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    overflow: visible;
-    transition: opacity 0.3s;
-}
-#lines[hidden] {
-    opacity: 0;
-}
-
-v-graph-node {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-origin: center center;
-    transform: translateX(0) translateX(var(--offset-x)) translateY(0) translateY(var(--offset-y));
-    will-change: transform;
-    contain: content;
-}
-v-graph-node[moving] {
-    z-index: 999;
-}
-
-.select-box {
-    position: absolute;
-    background: white;
-    opacity: 0.3;
-    width: 0;
-    height: 0;
-    top: 0;
-    left: 0;
-}
-`;

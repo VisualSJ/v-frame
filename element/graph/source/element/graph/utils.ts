@@ -8,7 +8,7 @@ import type { BaseElement } from '@itharbors/ui-core';
 import { getParamElementOffset, requestAnimtionFrameThrottling } from '../utils';
 import { ParamConnectData } from './data';
 import { queryLine } from '../../manager';
-import { MoveNodeDetail, SelectLineDetail, UnselectLineDetail, SelectNodeDetail, UnselectNodeDetail, InterruptMoveNodeDetail, LineSelectedDetail, LineUnselectedDetail, NodeSelectedDetail, NodeUnselectedDetail } from '../event-interface';
+import { MoveNodeDetail, SelectLineDetail, UnselectLineDetail, SelectNodeDetail, UnselectNodeDetail, InterruptMoveNodeDetail, LineSelectedDetail, LineUnselectedDetail, NodeSelectedDetail, NodeUnselectedDetail, NodePositionChangedDetail } from '../event-interface';
 
 export const nodeElementMap: WeakMap<NodeInfo, GraphNodeElement> = new WeakMap();
 
@@ -165,29 +165,25 @@ export function renderLine(graphType: string, $line: SVGGElement, line: LineInfo
     const $nodeB = nodeElementMap.get(nodeB);
 
     const d = new ParamConnectData(line, scale, $nodeA, $nodeB, nodeA, nodeB);
-    d.x1 = nodeA.position.x;
-    d.y1 = nodeA.position.y;
-    d.x2 = nodeB.position.x;
-    d.y2 = nodeB.position.y;
 
     let flagA = false;
     if ($nodeA && line.input.param) {
-        const offset = getParamElementOffset($nodeA, `v-graph-node-param[name="${line.input.param}"]`, scale);
+        const offset = getParamElementOffset($nodeA, `v-graph-node-param[name="${line.input.param}"]`);
         if (offset) {
             flagA = true;
-            d.x1 += offset.x;
-            d.y1 += offset.y;
+            d.x1 += offset.x / scale;
+            d.y1 += offset.y / scale;
             d.r1 = offset.role;
         }
     }
 
     let flagB = false;
     if ($nodeB && line.output.param) {
-        const offset = getParamElementOffset($nodeB, `v-graph-node-param[name="${line.output.param}"]`, scale);
+        const offset = getParamElementOffset($nodeB, `v-graph-node-param[name="${line.output.param}"]`);
         if (offset) {
             flagB = true;
-            d.x2 += offset.x;
-            d.y2 += offset.y;
+            d.x2 += offset.x / scale;
+            d.y2 += offset.y / scale;
             d.r2 = offset.role;
         }
     }
@@ -493,6 +489,19 @@ export function bindEventListener($elem: GraphElement) {
     $elem.shadowRoot.addEventListener('move-node', (event) => {
         const cEvent = event as CustomEvent<MoveNodeDetail>;
         const $nodeInfoList = $elem.getSelectedNodeList();
+
+        if ($nodeInfoList.length === 0 && cEvent.detail.node) {
+            const nodes = $elem.data.getProperty('nodes');
+            const uuid = cEvent.detail.node.getAttribute('node-uuid') || '';
+            const node = nodes[uuid];
+            if (node) {
+                $nodeInfoList.push({
+                    id: uuid,
+                    target: node,
+                });
+            }
+        }
+        
         let t = false;
         let at = false;
 
@@ -570,7 +579,24 @@ export function bindEventListener($elem: GraphElement) {
                 const $node = nodeElementMap.get(info.target)!;
                 $node.removeAttribute('moving');
             });
-            $elem.dispatch('node-position-changed');
+            const moveList = $nodeInfoList.map((info) => {
+                const $node = nodeElementMap.get(info.target)!;
+                const moveStartPoint = $node.getProperty('moveStartPoint');
+                const position = $node.getProperty('position');
+                return {
+                    id: $node.getAttribute('node-uuid') || '',
+                    source: {
+                        x: moveStartPoint.x / scale,
+                        y: moveStartPoint.y / scale,
+                    },
+                    target: position,
+                }
+            });
+            $elem.dispatch<NodePositionChangedDetail>('node-position-changed', {
+                detail: {
+                    moveList,
+                }
+            });
         };
         document.addEventListener('mousemove', mousemove);
         document.addEventListener('mouseup', mouseup, true);

@@ -58,7 +58,9 @@ export class GraphNodeElement extends BaseElement {
         const custom = new CustomEvent<MoveNodeDetail>('move-node', {
             bubbles: false,
             cancelable: false,
-            detail: {},
+            detail: {
+                node: this,
+            },
         });
         (this.getRootNode() as ShadowRoot).dispatchEvent(custom);
     }

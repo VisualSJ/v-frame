@@ -46,6 +46,28 @@ export class ParamConnectData {
         this.$nodeB = $nodeB;
         this.nodeA = nodeA;
         this.nodeB = nodeB;
+
+        if (nodeA) {
+            this.x1 = nodeA.position.x;
+            this.y1 = nodeA.position.y;
+
+            if ($nodeA) {
+                const bound = $nodeA.getBoundingClientRect();
+                this.x1 += bound.width / 2 / scale;
+                this.y1 += bound.height / 2 / scale;
+            }
+        }
+
+        if (nodeB) {
+            this.x2 = nodeB.position.x;
+            this.y2 = nodeB.position.y;
+
+            if ($nodeB) {
+                const bound = $nodeB.getBoundingClientRect();
+                this.x2 += bound.width / 2 / scale;
+                this.y2 += bound.height / 2 / scale;
+            }
+        }
     }
 
     getNodeABoundingClientRect() {
@@ -195,7 +217,7 @@ function shortestInput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: HT
     const boundA = $nodeA!.getBoundingClientRect();
     boundA.width /= scale;
     boundA.height /= scale;
-    const pa = intersect(data.x1, data.y1, data.x2, data.y2, nodeA.position.x - boundA.width / 2, nodeA.position.y - boundA.height / 2, boundA.width, boundA.height)!;
+    const pa = intersect(data.x1, data.y1, data.x2, data.y2, nodeA.position.x, nodeA.position.y, boundA.width, boundA.height)!;
     data.x1 = pa[0];
     data.y1 = pa[1];
     data.d1 = pa[2];
@@ -211,7 +233,7 @@ function shortestOutput(data: ParamConnectData, $nodeA?: HTMLElement, $nodeB?: H
     const boundB = $nodeB!.getBoundingClientRect();
     boundB.width /= scale;
     boundB.height /= scale;
-    const pb = intersect(data.x2, data.y2, data.x1, data.y1, nodeB.position.x - boundB.width / 2, nodeB.position.y - boundB.height / 2, boundB.width, boundB.height)!;
+    const pb = intersect(data.x2, data.y2, data.x1, data.y1, nodeB.position.x, nodeB.position.y, boundB.width, boundB.height)!;
     data.x2 = pb[0];
     data.y2 = pb[1];
     data.d2 = pb[2];

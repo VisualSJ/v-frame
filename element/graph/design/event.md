@@ -20,6 +20,7 @@
 | node-removed             | 通知 | 删除一个节点之后发出的消息
 | node-selected            | 通知 | 一个节点被选中的时候触发
 | node-unselected          | 通知 | 一个节点被取消选中的时候触发
+| node-connected           | 通知 | 确定用户操作准备连接一个节点
 | select-node              | 内部 | 选中一个节点
 | unselect-node            | 内部 | 取消选中一个节点
 | clear-select-node        | 内部 | 取消选中所有节点

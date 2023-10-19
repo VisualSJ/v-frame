@@ -20,9 +20,12 @@ export interface ClearSelectNodeDetail {
 }
 
 export interface MoveNodeDetail {
-    
+    node: GraphNodeElement;
 }
 
+export interface InterruptMoveNodeDetail {
+    
+}
 
 export interface InterruptMoveNodeDetail {
     
@@ -53,6 +56,14 @@ export interface NodeRemovedDetail {
 export interface NodeChangedDetail {
     id: string;
     node: NodeInfo;
+}
+
+export interface NodePositionChangedDetail {
+    moveList: {
+        id: string,
+        source: { x: number, y: number },
+        target: { x: number, y: number },
+    }[];
 }
 
 export interface NodeSelectedDetail {
